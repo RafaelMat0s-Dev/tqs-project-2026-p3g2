@@ -2,7 +2,6 @@
 *.class
 
 # Assistant Dirs
-AGENTS.md
 codex/
 
 # Log file
@@ -28,10 +27,14 @@ hs_err_pid*
 replay_pid*
 
 .vscode/
-.github/
 
 # Custom Dirs
 zdoc/
+
+# Node build output and dependencies
+node_modules/
+dist/
+*.tsbuildinfo
 
 # Maven
 target/
