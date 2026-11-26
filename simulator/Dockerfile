@@ -1,7 +1,8 @@
-FROM node:22-alpine
+FROM node:24-alpine
 WORKDIR /app
-COPY package.json ./
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev --no-audit --no-fund
 COPY src ./src
 USER node
 EXPOSE 8090
-CMD ["npm", "start"]
+CMD ["node", "src/index.js"]
