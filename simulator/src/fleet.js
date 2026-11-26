@@ -7,7 +7,7 @@ export function createFleet({ size, hubs, random }) {
     vehicleId: `B-${String(i + 1).padStart(2, "0")}`,
     batteryPercentage: 20 + Math.floor(random() * 81),
     locked: true,
-    hubId: hubs[i % hubs.length],
+    hubId: hubs[(i + 4) % hubs.length],
     shock: false,
   }));
 }

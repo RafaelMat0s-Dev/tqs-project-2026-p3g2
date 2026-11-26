@@ -1,11 +1,10 @@
 import mqtt from "mqtt";
 import { readConfig } from "./config.js";
 import { createFleet } from "./fleet.js";
+import { HUBS } from "./hubs.js";
 import { createLoop } from "./loop.js";
 import { createPublisher } from "./publisher.js";
 import { createServer } from "./server.js";
-
-const HUBS = ["hub-sao-bras", "hub-2", "hub-3", "hub-4", "hub-5", "hub-6"];
 
 let config;
 try {
