@@ -16,17 +16,18 @@ import org.springframework.context.SmartLifecycle;
 import org.springframework.stereotype.Component;
 import pt.marazul.telemetry.application.TelemetryListener;
 import pt.marazul.telemetry.application.TelemetrySource;
+import pt.marazul.telemetry.domain.InvalidTelemetryReading;
 
+import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 @Component
 class MqttTelemetryAdapter implements TelemetrySource, SmartLifecycle, MqttCallbackExtended {
     private static final Logger log = LoggerFactory.getLogger(MqttTelemetryAdapter.class);
     private static final int QOS = 1;
-    private static final int RETRY_SECONDS = 2;
+    private static final Duration RETRY_INTERVAL = Duration.ofSeconds(2);
 
     private final String brokerUrl;
     private final String topicFilter;
@@ -38,6 +39,7 @@ class MqttTelemetryAdapter implements TelemetrySource, SmartLifecycle, MqttCallb
         return thread;
     });
 
+    private volatile MqttConnectRetry retry;
     private volatile TelemetryListener listener;
     private volatile MqttAsyncClient client;
     private volatile boolean running;
@@ -67,20 +69,30 @@ class MqttTelemetryAdapter implements TelemetrySource, SmartLifecycle, MqttCallb
             return;
         }
         running = true;
-        connect();
+        retry = new MqttConnectRetry(this::connect, retries, RETRY_INTERVAL);
+        retry.start();
     }
 
     @Override
     public void stop() {
         running = false;
+        if (retry != null) {
+            retry.stop();
+        }
         retries.shutdownNow();
+        var current = client;
+        if (current == null) {
+            return;
+        }
         try {
-            if (client.isConnected()) {
-                client.disconnect().waitForCompletion(1000);
-            }
-            client.close();
+            current.disconnectForcibly(0, 1);
         } catch (MqttException e) {
-            log.warn("Falha ao fechar a ligação MQTT", e);
+            log.warn("Falha ao terminar a ligação MQTT", e);
+        }
+        try {
+            current.close(true);
+        } catch (MqttException e) {
+            log.warn("Falha ao fechar o cliente MQTT", e);
         }
     }
 
@@ -89,41 +101,40 @@ class MqttTelemetryAdapter implements TelemetrySource, SmartLifecycle, MqttCallb
         return running;
     }
 
-    private void connect() {
+    private Object connect() throws MqttException {
         var options = new MqttConnectOptions();
         options.setAutomaticReconnect(true);
         options.setCleanSession(true);
         options.setConnectionTimeout(5);
-        try {
-            client.connect(options, null, new IMqttActionListener() {
-                @Override
-                public void onSuccess(IMqttToken token) {
-                    log.info("Ligado ao broker MQTT {}", brokerUrl);
-                }
+        return client.connect(options, null, new IMqttActionListener() {
+            @Override
+            public void onSuccess(IMqttToken token) {
+                retry.onConnected();
+                log.info("Ligado ao broker MQTT {}", brokerUrl);
+            }
 
-                @Override
-                public void onFailure(IMqttToken token, Throwable exception) {
-                    log.warn("Broker MQTT {} indisponível; nova tentativa em {} s", brokerUrl, RETRY_SECONDS);
-                    scheduleRetry();
-                }
-            });
-        } catch (MqttException e) {
-            log.warn("Falha ao iniciar a ligação MQTT; nova tentativa em {} s", RETRY_SECONDS, e);
-            scheduleRetry();
-        }
-    }
-
-    private void scheduleRetry() {
-        if (running && !retries.isShutdown()) {
-            retries.schedule(this::connect, RETRY_SECONDS, TimeUnit.SECONDS);
-        }
+            @Override
+            public void onFailure(IMqttToken token, Throwable exception) {
+                log.warn("Broker MQTT {} indisponível; nova tentativa em {} s", brokerUrl, RETRY_INTERVAL.toSeconds());
+                retry.onConnectFailed();
+            }
+        });
     }
 
     @Override
     public void connectComplete(boolean reconnect, String serverUri) {
         try {
-            client.subscribe(topicFilter, QOS);
-            log.info("Subscrito {} (reconexão: {})", topicFilter, reconnect);
+            client.subscribe(topicFilter, QOS, null, new IMqttActionListener() {
+                @Override
+                public void onSuccess(IMqttToken token) {
+                    log.info("Subscrito {} (reconexão: {})", topicFilter, reconnect);
+                }
+
+                @Override
+                public void onFailure(IMqttToken token, Throwable exception) {
+                    log.error("Falha ao subscrever {}", topicFilter, exception);
+                }
+            });
         } catch (MqttException e) {
             log.error("Falha ao subscrever {}", topicFilter, e);
         }
@@ -140,7 +151,11 @@ class MqttTelemetryAdapter implements TelemetrySource, SmartLifecycle, MqttCallb
         try {
             target.onReading(parser.parse(topic, message.getPayload()));
         } catch (Exception e) {
-            log.warn("Mensagem de telemetria rejeitada em {}: {}", topic, e.getMessage());
+            if (e instanceof InvalidTelemetryReading) {
+                log.warn("Mensagem de telemetria rejeitada em {}: {}", topic, e.getMessage());
+            } else {
+                log.error("Erro ao processar telemetria em {}", topic, e);
+            }
             try {
                 target.onInvalidMessage(String.valueOf(e.getMessage()));
             } catch (Exception inner) {

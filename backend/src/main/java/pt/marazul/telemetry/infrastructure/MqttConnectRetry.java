@@ -2,27 +2,58 @@ package pt.marazul.telemetry.infrastructure;
 
 import java.time.Duration;
 import java.util.concurrent.Callable;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
-// esqueleto para os testes compilarem: a lógica vem com a implementação
 final class MqttConnectRetry {
+    private final Callable<?> connect;
+    private final ScheduledExecutorService scheduler;
+    private final Duration interval;
+    private volatile boolean active;
+
     MqttConnectRetry(Callable<?> connect, ScheduledExecutorService scheduler, Duration interval) {
-        throw new UnsupportedOperationException();
+        this.connect = connect;
+        this.scheduler = scheduler;
+        this.interval = interval;
     }
 
     void start() {
-        throw new UnsupportedOperationException();
+        active = true;
+        attempt();
     }
 
     void onConnected() {
-        throw new UnsupportedOperationException();
+        active = false;
     }
 
     void onConnectFailed() {
-        throw new UnsupportedOperationException();
+        scheduleNext();
     }
 
     void stop() {
-        throw new UnsupportedOperationException();
+        active = false;
+    }
+
+    private void attempt() {
+        if (!active) {
+            return;
+        }
+        try {
+            connect.call();
+        } catch (Exception e) {
+            scheduleNext();
+        }
+    }
+
+    private void scheduleNext() {
+        if (!active) {
+            return;
+        }
+        try {
+            scheduler.schedule(this::attempt, interval.toMillis(), TimeUnit.MILLISECONDS);
+        } catch (RejectedExecutionException e) {
+            active = false;
+        }
     }
 }
