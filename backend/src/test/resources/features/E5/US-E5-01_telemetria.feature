@@ -6,7 +6,7 @@ Funcionalidade: Telemetria das bicicletas
   Para que as reservas e o motor de autonomia usem dados recentes
 
   Cenário: A leitura publicada aparece no estado da bicicleta em menos de 5 segundos
-    Dado o simulador a publicar 10 leituras por segundo
+    Dado que estão a ser publicadas 10 leituras por segundo de outras bicicletas
     Quando é publicada uma leitura de 47 % para a bicicleta "B-17"
     Então em menos de 5 segundos o estado da bicicleta "B-17" mostra 47 %
 
@@ -20,7 +20,8 @@ Funcionalidade: Telemetria das bicicletas
     E o campo "lastReadingAt" da resposta é "2026-11-27T14:31:07Z"
 
   Cenário: Uma mensagem com JSON inválido é rejeitada e as leituras seguintes continuam a ser processadas
-    Dada uma mensagem com JSON inválido
+    Dado que o valor atual da métrica "marazul_telemetry_rejected_total" fica registado
+    E uma mensagem com JSON inválido
     Quando chega ao adaptador de telemetria
     Então a mensagem é rejeitada
     E a métrica "marazul_telemetry_rejected_total" aumenta
@@ -29,6 +30,9 @@ Funcionalidade: Telemetria das bicicletas
 
   Cenário: O atraso entre a leitura e o estado atualizado está exposto nas métricas
     Dado que há leituras a ser processadas
+    E o valor atual da métrica "marazul_telemetry_delay_seconds_count" fica registado
+    Quando é publicada uma leitura de 47 % para a bicicleta "B-17"
+    Então em menos de 5 segundos a métrica "marazul_telemetry_delay_seconds_count" aumenta
     Quando consulto "/actuator/prometheus"
     Então a resposta tem o estado 200
     E a métrica "marazul_telemetry_delay_seconds" está exposta
