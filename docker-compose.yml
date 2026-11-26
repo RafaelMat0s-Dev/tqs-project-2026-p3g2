@@ -39,13 +39,15 @@ services:
       DB_USER: ${DB_USER:-marazul}
       DB_PASSWORD: ${DB_PASSWORD:-marazul}
       MQTT_URL: tcp://mosquitto:1883
+      JWT_SECRET: ${JWT_SECRET:-dev-only-jwt-secret-change-me-please-32b}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-}
     depends_on:
       postgres:
         condition: service_healthy
       mosquitto:
         condition: service_healthy
-    ports:
-      - "${BACKEND_PORT:-8080}:8080"
+    expose:
+      - "8080"
     healthcheck:
       <<: *healthcheck
       test: ["CMD", "curl", "-fsS", "http://localhost:8080/actuator/health/readiness"]
