@@ -16,6 +16,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class TelemetryMessageParserTest {
+    private static final String ID_64 = "x".repeat(64);
+    private static final String ID_65 = "x".repeat(65);
     private static final String TOPIC = "marazul/vehicles/B-17/telemetry";
 
     private final TelemetryMessageParser parser = new TelemetryMessageParser(JsonMapper.builder().build());
@@ -47,6 +49,15 @@ class TelemetryMessageParserTest {
         return Stream.of(0, 100);
     }
 
+    @Test
+    void identifiersWith64CharactersAreAccepted() {
+        var reading = parser.parse("marazul/vehicles/" + ID_64 + "/telemetry",
+                bytes(json(ID_64, "\"2026-11-20T14:31:07Z\"", "47", "\"" + ID_64 + "\"")));
+
+        assertThat(reading.vehicleCode()).isEqualTo(ID_64);
+        assertThat(reading.hubId()).isEqualTo(ID_64);
+    }
+
     @ParameterizedTest(name = "{0}")
     @MethodSource("invalidMessages")
     void invalidMessageIsRejectedWithAReason(String description, String topic, byte[] payload) {
@@ -68,6 +79,10 @@ class TelemetryMessageParserTest {
                 Arguments.of("bateria 101", TOPIC, bytes(json("B-17", ok, "101", "null"))),
                 Arguments.of("bateria -1", TOPIC, bytes(json("B-17", ok, "-1", "null"))),
                 Arguments.of("vehicleId diferente do tópico", TOPIC, bytes(json("B-18", ok, "47", "null"))),
+                Arguments.of("vehicleId com 65 caracteres", "marazul/vehicles/" + ID_65 + "/telemetry",
+                        bytes(json(ID_65, ok, "47", "null"))),
+                Arguments.of("hubId com 65 caracteres", TOPIC, bytes(json("B-17", ok, "47", "\"" + ID_65 + "\""))),
+                Arguments.of("hubId não é texto", TOPIC, bytes(json("B-17", ok, "47", "5"))),
                 Arguments.of("originAt mal formado", TOPIC, bytes(json("B-17", "\"ontem à tarde\"", "47", "null"))));
     }
 

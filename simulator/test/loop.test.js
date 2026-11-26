@@ -67,4 +67,21 @@ describe("loop", () => {
 
     assert.equal(published.length, 2);
   });
+
+  it("names the vehicle whose publication failed in the error log", async () => {
+    const errors = [];
+    mock.method(console, "error", (message) => errors.push(message));
+    publisher.publish = async (reading) => {
+      if (reading.vehicleId === "B-01") throw new Error("broker em baixo");
+    };
+    const loop = createLoop({ fleet: vehicles(3), publisher, rate: 10, random: calm, clock });
+    loop.start();
+    mock.timers.tick(100);
+    loop.stop();
+    await new Promise((resolve) => setImmediate(resolve));
+
+    assert.equal(errors.length, 1);
+    assert.match(errors[0], /B-01/);
+    assert.doesNotMatch(errors[0], /B-02/);
+  });
 });

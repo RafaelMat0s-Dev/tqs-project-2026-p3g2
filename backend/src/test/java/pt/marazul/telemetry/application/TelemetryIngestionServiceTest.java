@@ -2,6 +2,8 @@ package pt.marazul.telemetry.application;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import pt.marazul.telemetry.domain.TelemetryReading;
 
 import java.time.Clock;
@@ -74,6 +76,29 @@ class TelemetryIngestionServiceTest {
         service.onReading(reading);
 
         verify(metrics).readingApplied(Duration.ZERO);
+    }
+
+    @ParameterizedTest(name = "originAt {0} s à frente do relógio é aplicada")
+    @ValueSource(longs = {0, 1, 60})
+    void readingUpToOneMinuteAheadOfTheClockIsApplied(long secondsAhead) {
+        var reading = reading(now.plusSeconds(secondsAhead));
+        when(repository.saveIfNewer(reading)).thenReturn(true);
+
+        service.onReading(reading);
+
+        verify(repository).saveIfNewer(reading);
+        verify(events).readingApplied(reading);
+    }
+
+    @ParameterizedTest(name = "originAt {0} s à frente do relógio é rejeitada")
+    @ValueSource(longs = {61, 3600, 86_400})
+    void readingMoreThanOneMinuteAheadOfTheClockIsRejected(long secondsAhead) {
+        service.onReading(reading(now.plusSeconds(secondsAhead)));
+
+        verify(metrics).readingRejected();
+        verify(metrics, never()).readingApplied(any());
+        verify(metrics, never()).readingDiscarded();
+        verifyNoInteractions(repository, events);
     }
 
     @Test
