@@ -26,6 +26,7 @@ import pt.marazul.telemetry.application.TelemetryIngestionService;
 import pt.marazul.telemetry.application.TelemetrySource;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -85,6 +86,9 @@ class MqttTelemetryIngestionIT {
     JdbcTemplate jdbc;
 
     @Autowired
+    Clock clock;
+
+    @Autowired
     ReceivedEvents received;
 
     @Autowired
@@ -118,10 +122,10 @@ class MqttTelemetryIngestionIT {
         try {
             scheduler.scheduleAtFixedRate(() -> {
                 var other = "B-" + (30 + next.getAndIncrement() % 10);
-                publishQuietly(other, json(other, Instant.now(), 80));
+                publishQuietly(other, json(other, clock.instant(), 80));
             }, 0, 100, TimeUnit.MILLISECONDS);
 
-            publish("B-17", json("B-17", Instant.now(), 47));
+            publish("B-17", json("B-17", clock.instant(), 47));
 
             await().atMost(SLO3).untilAsserted(() -> given().get("/api/telemetry/vehicles/B-17")
                     .then().statusCode(200).body("batteryPercentage", org.hamcrest.Matchers.equalTo(47)));
@@ -134,17 +138,17 @@ class MqttTelemetryIngestionIT {
 
     @Test
     void olderReadingIsDiscardedAndStateDoesNotChange() throws Exception {
-        publish("B-21", json("B-21", Instant.parse("2026-11-27T14:31:07Z"), 47));
+        publish("B-21", json("B-21", Instant.parse("2026-11-20T14:31:07Z"), 47));
         await().atMost(SLO3).untilAsserted(() -> given().get("/api/telemetry/vehicles/B-21")
                 .then().statusCode(200).body("batteryPercentage", org.hamcrest.Matchers.equalTo(47)));
         var discardedBefore = counter("marazul.telemetry.discarded");
 
-        publish("B-21", json("B-21", Instant.parse("2026-11-27T14:31:05Z"), 30));
+        publish("B-21", json("B-21", Instant.parse("2026-11-20T14:31:05Z"), 30));
 
         await().atMost(SLO3).until(() -> counter("marazul.telemetry.discarded") > discardedBefore);
         given().get("/api/telemetry/vehicles/B-21").then().statusCode(200)
                 .body("batteryPercentage", org.hamcrest.Matchers.equalTo(47))
-                .body("lastReadingAt", org.hamcrest.Matchers.equalTo("2026-11-27T14:31:07Z"));
+                .body("lastReadingAt", org.hamcrest.Matchers.equalTo("2026-11-20T14:31:07Z"));
     }
 
     @Test
@@ -153,7 +157,7 @@ class MqttTelemetryIngestionIT {
 
         publishRaw("B-22", "{isto não é json");
         await().atMost(SLO3).until(() -> counter("marazul.telemetry.rejected") > rejectedBefore);
-        publish("B-22", json("B-22", Instant.now(), 47));
+        publish("B-22", json("B-22", clock.instant(), 47));
 
         await().atMost(SLO3).untilAsserted(() -> given().get("/api/telemetry/vehicles/B-22")
                 .then().statusCode(200).body("batteryPercentage", org.hamcrest.Matchers.equalTo(47)));
@@ -163,7 +167,7 @@ class MqttTelemetryIngestionIT {
     void messageWithVehicleIdDifferentFromTheTopicIsRejected() throws Exception {
         var rejectedBefore = counter("marazul.telemetry.rejected");
 
-        publishRaw("B-23", json("B-24", Instant.now(), 47));
+        publishRaw("B-23", json("B-24", clock.instant(), 47));
 
         await().atMost(SLO3).until(() -> counter("marazul.telemetry.rejected") > rejectedBefore);
         given().get("/api/telemetry/vehicles/B-24").then().statusCode(404);
@@ -190,7 +194,7 @@ class MqttTelemetryIngestionIT {
             return;
         }
         await().atMost(Duration.ofSeconds(30)).pollInterval(Duration.ofMillis(300)).until(() -> {
-            publishQuietly("B-WARMUP", json("B-WARMUP", Instant.now().truncatedTo(ChronoUnit.MILLIS), 90));
+            publishQuietly("B-WARMUP", json("B-WARMUP", clock.instant().truncatedTo(ChronoUnit.MILLIS), 90));
             return given().get("/api/telemetry/vehicles/B-WARMUP").statusCode() == 200;
         });
         adapterReady = true;

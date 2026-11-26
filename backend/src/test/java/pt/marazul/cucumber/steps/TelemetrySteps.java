@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -42,6 +43,9 @@ public class TelemetrySteps {
 
     @Autowired
     private JdbcTemplate jdbc;
+
+    @Autowired
+    private Clock clock;
 
     private final Map<String, Double> recorded = new HashMap<>();
     private ScheduledExecutorService background;
@@ -80,7 +84,7 @@ public class TelemetrySteps {
         background = Executors.newSingleThreadScheduledExecutor();
         background.scheduleAtFixedRate(() -> {
             var code = String.format("B-%02d", 1 + next.getAndIncrement() % 10);
-            publishQuietly(code, json(code, Instant.now(), 80));
+            publishQuietly(code, json(code, clock.instant(), 80));
         }, 0, 1000 / perSecond, TimeUnit.MILLISECONDS);
     }
 
@@ -99,7 +103,7 @@ public class TelemetrySteps {
     @Quando("é publicada uma leitura de {int} % para a bicicleta {string}")
     public void readingPublished(int battery, String code) throws MqttException {
         ensureAdapterReady();
-        publish(code, json(code, Instant.now(), battery));
+        publish(code, json(code, clock.instant(), battery));
     }
 
     @Quando("chega à bicicleta {string} uma leitura de {int} % das {string}")
@@ -183,7 +187,7 @@ public class TelemetrySteps {
             return;
         }
         await().atMost(Duration.ofSeconds(30)).pollInterval(Duration.ofMillis(300)).until(() -> {
-            publishQuietly("B-WARMUP", json("B-WARMUP", Instant.now().truncatedTo(ChronoUnit.MILLIS), 90));
+            publishQuietly("B-WARMUP", json("B-WARMUP", clock.instant().truncatedTo(ChronoUnit.MILLIS), 90));
             return given().get("/api/telemetry/vehicles/B-WARMUP").statusCode() == 200;
         });
         adapterReady = true;

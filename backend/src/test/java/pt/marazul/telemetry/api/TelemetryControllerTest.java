@@ -35,7 +35,7 @@ class TelemetryControllerTest {
         TelemetryIngestionService telemetryIngestionService(VehicleTelemetryRepository repository,
                                                             TelemetryMetrics metrics, TelemetryEvents events) {
             return new TelemetryIngestionService(repository, metrics, events,
-                    Clock.fixed(Instant.parse("2026-11-27T14:31:08Z"), ZoneOffset.UTC));
+                    Clock.fixed(Instant.parse("2026-11-20T14:31:08Z"), ZoneOffset.UTC));
         }
     }
 
@@ -54,7 +54,7 @@ class TelemetryControllerTest {
     @Test
     void knownVehicleReturns200WithTheFullState() throws Exception {
         when(repository.findLatest("B-17")).thenReturn(Optional.of(
-                new TelemetryReading("B-17", Instant.parse("2026-11-27T14:31:07Z"), 47, true, "sao-bras", false)));
+                new TelemetryReading("B-17", Instant.parse("2026-11-20T14:31:07Z"), 47, true, "sao-bras", false)));
 
         mvc.perform(get("/api/telemetry/vehicles/{code}", "B-17"))
                 .andExpect(status().isOk())
@@ -63,7 +63,7 @@ class TelemetryControllerTest {
                 .andExpect(jsonPath("$.locked").value(true))
                 .andExpect(jsonPath("$.hubId").value("sao-bras"))
                 .andExpect(jsonPath("$.shock").value(false))
-                .andExpect(jsonPath("$.lastReadingAt").value("2026-11-27T14:31:07Z"));
+                .andExpect(jsonPath("$.lastReadingAt").value("2026-11-20T14:31:07Z"));
     }
 
     @Test

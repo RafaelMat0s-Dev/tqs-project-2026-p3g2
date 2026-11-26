@@ -22,15 +22,15 @@ class TelemetryMessageParserTest {
 
     @Test
     void validJsonBecomesTheExpectedReading() {
-        var json = json("B-17", "\"2026-11-27T14:31:07.000Z\"", "47", "\"sao-bras\"");
+        var json = json("B-17", "\"2026-11-20T14:31:07.000Z\"", "47", "\"sao-bras\"");
 
         assertThat(parser.parse(TOPIC, bytes(json))).isEqualTo(
-                new TelemetryReading("B-17", Instant.parse("2026-11-27T14:31:07Z"), 47, true, "sao-bras", false));
+                new TelemetryReading("B-17", Instant.parse("2026-11-20T14:31:07Z"), 47, true, "sao-bras", false));
     }
 
     @Test
     void nullHubIsAccepted() {
-        var reading = parser.parse(TOPIC, bytes(json("B-17", "\"2026-11-27T14:31:07Z\"", "47", "null")));
+        var reading = parser.parse(TOPIC, bytes(json("B-17", "\"2026-11-20T14:31:07Z\"", "47", "null")));
 
         assertThat(reading.hubId()).isNull();
     }
@@ -38,7 +38,7 @@ class TelemetryMessageParserTest {
     @ParameterizedTest(name = "bateria {0} é aceite")
     @MethodSource("validBatteries")
     void batteryBoundariesAreAccepted(int battery) {
-        var reading = parser.parse(TOPIC, bytes(json("B-17", "\"2026-11-27T14:31:07Z\"", "" + battery, "null")));
+        var reading = parser.parse(TOPIC, bytes(json("B-17", "\"2026-11-20T14:31:07Z\"", "" + battery, "null")));
 
         assertThat(reading.batteryPercentage()).isEqualTo(battery);
     }
@@ -56,7 +56,7 @@ class TelemetryMessageParserTest {
     }
 
     static Stream<Arguments> invalidMessages() {
-        var ok = "\"2026-11-27T14:31:07Z\"";
+        var ok = "\"2026-11-20T14:31:07Z\"";
         return Stream.of(
                 Arguments.of("JSON inválido", TOPIC, bytes("{not json")),
                 Arguments.of("payload vazio", TOPIC, new byte[0]),

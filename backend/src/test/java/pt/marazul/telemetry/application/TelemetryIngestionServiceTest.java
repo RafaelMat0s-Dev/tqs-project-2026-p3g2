@@ -19,7 +19,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class TelemetryIngestionServiceTest {
-    private final Instant now = Instant.parse("2026-11-27T14:31:10Z");
+    private final Instant now = Instant.parse("2026-11-20T14:31:10Z");
     private final VehicleTelemetryRepository repository = mock(VehicleTelemetryRepository.class);
     private final TelemetryMetrics metrics = mock(TelemetryMetrics.class);
     private final TelemetryEvents events = mock(TelemetryEvents.class);
@@ -36,7 +36,7 @@ class TelemetryIngestionServiceTest {
 
     @Test
     void appliedReadingRecordsDelayAndPublishesEvent() {
-        var reading = reading(Instant.parse("2026-11-27T14:31:07Z"));
+        var reading = reading(Instant.parse("2026-11-20T14:31:07Z"));
         when(repository.saveIfNewer(reading)).thenReturn(true);
 
         service.onReading(reading);
@@ -48,7 +48,7 @@ class TelemetryIngestionServiceTest {
 
     @Test
     void discardedReadingIsCountedWithoutEventOrDelay() {
-        var reading = reading(Instant.parse("2026-11-27T14:31:05Z"));
+        var reading = reading(Instant.parse("2026-11-20T14:31:05Z"));
         when(repository.saveIfNewer(reading)).thenReturn(false);
 
         service.onReading(reading);

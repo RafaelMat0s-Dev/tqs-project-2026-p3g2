@@ -18,9 +18,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
 class JdbcVehicleTelemetryRepositoryIT {
-    private static final Instant T_14_31_05 = Instant.parse("2026-11-27T14:31:05Z");
-    private static final Instant T_14_31_07 = Instant.parse("2026-11-27T14:31:07Z");
-    private static final Instant T_14_31_09 = Instant.parse("2026-11-27T14:31:09Z");
+    private static final Instant T_14_31_05 = Instant.parse("2026-11-20T14:31:05Z");
+    private static final Instant T_14_31_07 = Instant.parse("2026-11-20T14:31:07Z");
+    private static final Instant T_14_31_09 = Instant.parse("2026-11-20T14:31:09Z");
 
     @Autowired
     JdbcVehicleTelemetryRepository repository;
