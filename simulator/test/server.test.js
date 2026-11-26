@@ -116,6 +116,13 @@ describe("simulator server", () => {
     });
   }
 
+  it("rejects a non-integer battery 47.5 with 400", async () => {
+    const response = await post({ vehicleId: "B-17", batteryPercentage: 47.5 });
+
+    assert.equal(response.status, 400);
+    assert.equal(readings.length, 0);
+  });
+
   it("rejects malformed JSON with 400", async () => {
     assert.equal((await post("{nope")).status, 400);
   });
