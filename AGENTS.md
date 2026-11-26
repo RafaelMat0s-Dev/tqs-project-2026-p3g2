@@ -28,6 +28,7 @@
 - Mockito only for ports. Use Awaitility for asynchronous code, never `Thread.sleep`.
 - Every business rule has parameterized tests on its boundaries (for example 24 % / 25 % for BR1).
 - Acceptance criteria are Gherkin scenarios in `backend/src/test/resources/features/E<n>/US-E<n>-<yy>_*.feature`, tagged `@REQ_SCRUM-<n> @US-E<n>-<yy> @E<n> @BR<x>`. `@wip` and `@quarentena` do not run. Reuse `ApiSteps`.
+- Whoever implements a story writes its `.feature` from the Jira acceptance criteria, with `@wip`; QA reviews the scenarios in the pull request before `@wip` is removed.
 - TDD with a `test(...)` commit before the `feat(...)` commit for the autonomy engine and pricing.
 - Coverage gates: 80 % overall and 90 % per `domain` package (JaCoCo), and the SonarQube "MarAzul" gate.
 

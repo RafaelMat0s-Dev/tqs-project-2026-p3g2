@@ -7,6 +7,7 @@
 
 - [ ] `mvn verify` e `npm run test:coverage` passam localmente
 - [ ] Os critérios de aceitação estão no `.feature`, sem `@wip`
+- [ ] Cenários do `.feature` revistos pela QA
 - [ ] Fronteiras das regras testadas; `*IT` para base de dados, adaptadores e endpoints (403, 409, 422)
 - [ ] Quality gate do SonarQube e `dependencias` verdes no CI
 - [ ] Sem segredos nem dados pessoais
