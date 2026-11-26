@@ -7,6 +7,8 @@ import pt.marazul.booking.domain.ReservationRuleViolation;
 import pt.marazul.booking.domain.Vehicle;
 
 import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -38,7 +40,37 @@ public class ReservationService {
         }
         Reservation reservation = new Reservation(UUID.randomUUID(), vehicleId, guestId, startsAt, endsAt);
         reservations.save(reservation);
-        vehicles.save(new Vehicle(vehicle.id(), vehicle.hubId(), vehicle.type(), vehicle.batteryPercentage(), Vehicle.Status.RESERVED));
+        vehicles.save(vehicle.withStatus(Vehicle.Status.RESERVED));
         return reservation;
+    }
+
+    public Optional<Reservation> find(UUID reservationId) {
+        return reservations.findById(reservationId);
+    }
+
+    public List<Reservation> findReservedStartedBefore(Instant instant) {
+        return reservations.findReservedStartedBefore(instant);
+    }
+
+    public void markUnlocked(UUID reservationId) {
+        Reservation reservation = reserved(reservationId);
+        reservations.save(reservation.withStatus(Reservation.Status.CONVERTED));
+        changeVehicleStatus(reservation.vehicleId(), Vehicle.Status.IN_USE);
+    }
+
+    public void expire(UUID reservationId) {
+        Reservation reservation = reserved(reservationId);
+        reservations.save(reservation.withStatus(Reservation.Status.EXPIRED));
+        changeVehicleStatus(reservation.vehicleId(), Vehicle.Status.AVAILABLE);
+    }
+
+    private Reservation reserved(UUID reservationId) {
+        return reservations.findById(reservationId)
+                .filter(r -> r.status() == Reservation.Status.RESERVED)
+                .orElseThrow(() -> new IllegalStateException("A reserva " + reservationId + " não está ativa."));
+    }
+
+    private void changeVehicleStatus(UUID vehicleId, Vehicle.Status status) {
+        vehicles.findById(vehicleId).ifPresent(vehicle -> vehicles.save(vehicle.withStatus(status)));
     }
 }
