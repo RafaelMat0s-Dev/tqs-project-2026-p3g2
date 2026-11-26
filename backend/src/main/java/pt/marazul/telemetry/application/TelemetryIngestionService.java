@@ -11,6 +11,7 @@ public class TelemetryIngestionService implements TelemetryListener {
     private final TelemetryMetrics metrics;
     private final TelemetryEvents events;
     private final Clock clock;
+    private static final Duration MAX_FUTURE_SKEW = Duration.ofSeconds(60);
 
     public TelemetryIngestionService(VehicleTelemetryRepository repository, TelemetryMetrics metrics,
                                      TelemetryEvents events, Clock clock) {
@@ -22,6 +23,10 @@ public class TelemetryIngestionService implements TelemetryListener {
 
     @Override
     public void onReading(TelemetryReading reading) {
+        if (reading.originAt().isAfter(clock.instant().plus(MAX_FUTURE_SKEW))) {
+            metrics.readingRejected();
+            return;
+        }
         if (repository.saveIfNewer(reading)) {
             var delay = Duration.between(reading.originAt(), clock.instant());
             metrics.readingApplied(delay.isNegative() ? Duration.ZERO : delay);
