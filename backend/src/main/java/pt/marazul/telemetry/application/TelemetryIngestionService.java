@@ -6,7 +6,6 @@ import java.time.Clock;
 import java.time.Duration;
 import java.util.Optional;
 
-// registado como bean na F3 (adaptadores de infraestrutura)
 public class TelemetryIngestionService implements TelemetryListener {
     private final VehicleTelemetryRepository repository;
     private final TelemetryMetrics metrics;
