@@ -1,6 +1,7 @@
 package pt.marazul.cucumber.steps;
 
 import io.cucumber.java.After;
+import io.cucumber.java.AfterAll;
 import io.cucumber.java.Before;
 import io.cucumber.java.pt.Dado;
 import io.cucumber.java.pt.Então;
@@ -51,6 +52,18 @@ public class TelemetrySteps {
     @Before
     public void clearB17() {
         jdbc.update("delete from telemetry_vehicle_state where vehicle_code = 'B-17'");
+    }
+
+    @AfterAll
+    public static synchronized void closePublisher() throws MqttException {
+        if (publisher != null) {
+            if (publisher.isConnected()) {
+                publisher.disconnect();
+            }
+            publisher.close();
+            publisher = null;
+            adapterReady = false;
+        }
     }
 
     @After
