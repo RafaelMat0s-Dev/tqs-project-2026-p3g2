@@ -5,7 +5,7 @@ import { toReading } from "../src/reading.js";
 const clock = () => new Date("2026-11-27T14:31:05Z");
 
 describe("toReading", () => {
-  const vehicle = { vehicleId: "B-17", batteryPercentage: 47, locked: true, hubId: "hub-sao-bras", shock: false };
+  const vehicle = { vehicleId: "B-17", batteryPercentage: 47, locked: true, hubId: "sao-bras", shock: false };
 
   it("returns the telemetry format with originAt from the injected clock", () => {
     assert.deepEqual(toReading(vehicle, clock), {
@@ -13,7 +13,7 @@ describe("toReading", () => {
       originAt: "2026-11-27T14:31:05.000Z",
       batteryPercentage: 47,
       locked: true,
-      hubId: "hub-sao-bras",
+      hubId: "sao-bras",
       shock: false,
     });
   });

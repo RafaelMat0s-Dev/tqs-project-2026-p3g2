@@ -23,7 +23,7 @@ describe("publisher", () => {
       originAt: "2026-11-27T14:31:05Z",
       batteryPercentage: 47,
       locked: true,
-      hubId: "hub-sao-bras",
+      hubId: "sao-bras",
       shock: false,
     };
 

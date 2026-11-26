@@ -9,7 +9,7 @@ describe("simulator server", () => {
   let raws;
   let connected;
   const fleet = [
-    { vehicleId: "B-17", batteryPercentage: 80, locked: true, hubId: "hub-sao-bras", shock: false },
+    { vehicleId: "B-17", batteryPercentage: 80, locked: true, hubId: "sao-bras", shock: false },
   ];
   const publisher = {
     publish: async (reading) => readings.push(reading),
@@ -79,7 +79,7 @@ describe("simulator server", () => {
     assert.equal(body.vehicleId, "B-17");
     assert.equal(body.batteryPercentage, 47);
     assert.equal(body.locked, true);
-    assert.equal(body.hubId, "hub-sao-bras");
+    assert.equal(body.hubId, "sao-bras");
     assert.equal(body.shock, false);
     assert.ok(body.originAt);
   });

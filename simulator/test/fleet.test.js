@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { createFleet, stepVehicle } from "../src/fleet.js";
+import { HUBS } from "../src/hubs.js";
 
-const HUBS = ["hub-sao-bras", "hub-2", "hub-3", "hub-4", "hub-5", "hub-6"];
 
 function seeded(seed) {
   let state = seed;
@@ -27,6 +27,16 @@ describe("createFleet", () => {
     assert.deepEqual([...used].sort(), [...HUBS].sort());
   });
 
+  it("puts B-17 at the sao-bras hub", () => {
+    assert.equal(fleet[16].hubId, "sao-bras");
+  });
+
+  it("balances the bikes, 10 per hub", () => {
+    for (const hub of HUBS) {
+      assert.equal(fleet.filter((vehicle) => vehicle.hubId === hub).length, 10);
+    }
+  });
+
   it("starts every battery between 20 and 100", () => {
     for (const vehicle of fleet) {
       assert.ok(vehicle.batteryPercentage >= 20 && vehicle.batteryPercentage <= 100);
@@ -38,7 +48,7 @@ describe("stepVehicle", () => {
   const calm = () => 0.5; // never triggers a rare event
 
   it("charges a bike parked at a hub", () => {
-    const parked = { vehicleId: "B-17", batteryPercentage: 40, locked: true, hubId: "hub-sao-bras", shock: false };
+    const parked = { vehicleId: "B-17", batteryPercentage: 40, locked: true, hubId: "sao-bras", shock: false };
     assert.ok(stepVehicle(parked, calm).batteryPercentage > 40);
   });
 
@@ -48,7 +58,7 @@ describe("stepVehicle", () => {
   });
 
   it("keeps a full parked battery at 100", () => {
-    const parked = { vehicleId: "B-17", batteryPercentage: 100, locked: true, hubId: "hub-sao-bras", shock: false };
+    const parked = { vehicleId: "B-17", batteryPercentage: 100, locked: true, hubId: "sao-bras", shock: false };
     assert.equal(stepVehicle(parked, calm).batteryPercentage, 100);
   });
 
@@ -67,15 +77,15 @@ describe("stepVehicle", () => {
   });
 
   it("does not change the state or raise a shock when nothing rare happens", () => {
-    const parked = { vehicleId: "B-17", batteryPercentage: 40, locked: true, hubId: "hub-sao-bras", shock: false };
+    const parked = { vehicleId: "B-17", batteryPercentage: 40, locked: true, hubId: "sao-bras", shock: false };
     const next = stepVehicle(parked, calm);
     assert.equal(next.locked, true);
-    assert.equal(next.hubId, "hub-sao-bras");
+    assert.equal(next.hubId, "sao-bras");
     assert.equal(next.shock, false);
   });
 
   it("raises a shock only on a very rare draw", () => {
-    const parked = { vehicleId: "B-17", batteryPercentage: 40, locked: true, hubId: "hub-sao-bras", shock: false };
+    const parked = { vehicleId: "B-17", batteryPercentage: 40, locked: true, hubId: "sao-bras", shock: false };
     assert.equal(stepVehicle(parked, () => 0).shock, true);
   });
 });

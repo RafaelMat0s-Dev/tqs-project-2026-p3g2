@@ -10,7 +10,7 @@ function vehicles(n) {
     vehicleId: `B-${String(i + 1).padStart(2, "0")}`,
     batteryPercentage: 50,
     locked: true,
-    hubId: "hub-sao-bras",
+    hubId: "sao-bras",
     shock: false,
   }));
 }
