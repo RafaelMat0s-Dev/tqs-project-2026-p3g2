@@ -1,19 +1,7 @@
-# Compiled class file
 *.class
-
-# Assistant Dirs
-codex/
-
-# Log file
 *.log
-
-# BlueJ files
 *.ctxt
-
-# Mobile Tools for Java (J2ME)
 .mtj.tmp/
-
-# Package Files #
 *.jar
 *.war
 *.nar
@@ -21,22 +9,9 @@ codex/
 *.zip
 *.tar.gz
 *.rar
-
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 replay_pid*
 
-.vscode/
-
-# Custom Dirs
-zdoc/
-
-# Node build output and dependencies
-node_modules/
-dist/
-*.tsbuildinfo
-
-# Maven
 target/
 pom.xml.tag
 pom.xml.releaseBackup
@@ -46,12 +21,43 @@ release.properties
 dependency-reduced-pom.xml
 buildNumber.properties
 .mvn/timing.properties
-# https://maven.apache.org/tools/wrapper/#Usage_with_or_without_Binary_JAR
 .mvn/wrapper/maven-wrapper.jar
 
-# Eclipse m2e generated files
-# Eclipse Core
-.project
-# JDT-specific (Eclipse Java Development Tools)
-.classpath
+node_modules/
+dist/
+*.tsbuildinfo
+coverage/
+playwright-report/
+test-results/
+blob-report/
+.lighthouseci/
+.scannerwork/
+.sonar/
+k6-summary.json
 
+.env
+.env.*
+!.env.example
+
+.vscode/
+.idea/
+*.iml
+.project
+.classpath
+.settings/
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+codex/
+zdoc/
+.claude/
+Context.md
+CLAUDE.local.md
+
+docs/especificacao/
+docs/plano/
+docs/Docs-Projeto.txt
+docs/TQS26-*.pdf
+docs/MarAzul_Manual_Qualidade_TQS.pdf

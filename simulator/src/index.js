@@ -1,9 +1,8 @@
-import http from "node:http";
+import { createServer } from "./server.js";
 
 const port = Number(process.env.PORT ?? 8090);
-const server = http.createServer((_request, response) => {
-  response.writeHead(200, { "content-type": "application/json" });
-  response.end(JSON.stringify({ service: "marazul-telemetry-simulator", status: "ok", readings: [] }));
-});
+const brokerUrl = process.env.MQTT_URL ?? "mqtt://localhost:1883";
 
-server.listen(port, () => console.log(`Telemetry simulator listening on ${port}`));
+createServer({ brokerUrl }).listen(port, () => {
+  console.log(`Telemetry simulator listening on ${port} (broker ${brokerUrl})`);
+});

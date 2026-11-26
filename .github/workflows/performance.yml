@@ -1,0 +1,45 @@
+name: Performance
+
+on:
+  workflow_dispatch:
+    inputs:
+      script:
+        description: k6 script in perf/
+        type: choice
+        options: [smoke, slo1-bookings, slo2-search]
+        default: smoke
+      base_url:
+        description: Target URL (empty = docker compose in the runner)
+        required: false
+        default: ""
+      duration:
+        description: Duration for the SLO scripts
+        required: false
+        default: 3m
+
+permissions:
+  contents: read
+
+jobs:
+  k6:
+    runs-on: ubuntu-latest
+    env:
+      BASE_URL: ${{ inputs.base_url || 'http://localhost:5173' }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: docker compose up
+        if: inputs.base_url == ''
+        run: docker compose up -d --build --wait --wait-timeout 300
+      - uses: grafana/setup-k6-action@v1
+      - name: k6 run perf/${{ inputs.script }}.js
+        run: >
+          k6 run -e BASE_URL="$BASE_URL" -e DURATION="${{ inputs.duration }}"
+          --summary-export=k6-summary.json perf/${{ inputs.script }}.js
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: k6-${{ inputs.script }}
+          path: k6-summary.json
+      - name: Stop
+        if: always() && inputs.base_url == ''
+        run: docker compose down -v

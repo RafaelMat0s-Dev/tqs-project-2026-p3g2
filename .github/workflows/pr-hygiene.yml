@@ -1,0 +1,34 @@
+name: PR hygiene
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+jobs:
+  pr-hygiene:
+    name: pr-hygiene
+    runs-on: ubuntu-latest
+    steps:
+      - name: Jira key, branch name and AI label
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+          BRANCH: ${{ github.head_ref }}
+          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: |
+          status=0
+          if ! printf '%s' "$TITLE" | grep -Eq '(SCRUM|MAR)-[0-9]+'; then
+            echo "::error title=Título do PR::O título tem de ter a chave Jira da história, por exemplo 'SCRUM-20 ciclo de vida do veículo'."
+            status=1
+          fi
+          if ! printf '%s' "$BRANCH" | grep -Eq '^(feature|fix|chore|docs|test)/(SCRUM|MAR)-[0-9]+'; then
+            echo "::warning title=Nome do ramo::O ramo devia ser feature/SCRUM-<n>-descricao (está '$BRANCH')."
+          fi
+          ai_labels=$(printf '%s' "$LABELS" | tr ',' '\n' | grep -Ec '^ia:(nenhuma|assistida|agente)$' || true)
+          if [ "$ai_labels" -ne 1 ]; then
+            echo "::error title=Etiqueta de IA::O PR tem de ter exatamente uma etiqueta: ia:nenhuma, ia:assistida ou ia:agente."
+            status=1
+          fi
+          exit $status
