@@ -1,5 +1,5 @@
 # language: pt
-@REQ_SCRUM-29 @US-E5-01 @E5 @SLO3 @wip
+@REQ_SCRUM-29 @US-E5-01 @E5 @SLO3
 Funcionalidade: Telemetria das bicicletas
   Como coordenador de operações
   Quero que o estado das bicicletas se atualize a partir das leituras de telemetria
