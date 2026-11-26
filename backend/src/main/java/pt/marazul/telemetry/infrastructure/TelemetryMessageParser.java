@@ -16,6 +16,8 @@ import java.time.format.DateTimeParseException;
 
 @Component
 class TelemetryMessageParser {
+    private static final int MAX_ID_LENGTH = 64;
+
     private final JsonMapper mapper;
 
     TelemetryMessageParser(JsonMapper mapper) {
@@ -28,6 +30,9 @@ class TelemetryMessageParser {
             throw new InvalidTelemetryReading("A mensagem de telemetria tem de ser um objeto JSON.");
         }
         var vehicleId = text(root, "vehicleId");
+        if (vehicleId.length() > MAX_ID_LENGTH) {
+            throw new InvalidTelemetryReading("O vehicleId excede " + MAX_ID_LENGTH + " caracteres.");
+        }
         var topicVehicle = topic.split("/").length > 2 ? topic.split("/")[2] : "";
         if (!vehicleId.equals(topicVehicle)) {
             throw new InvalidTelemetryReading("O vehicleId da mensagem não corresponde ao do tópico.");
@@ -37,6 +42,9 @@ class TelemetryMessageParser {
             throw new InvalidTelemetryReading("O campo batteryPercentage é obrigatório e tem de ser inteiro.");
         }
         var hub = root.get("hubId");
+        if (hub != null && !hub.isNull() && (!hub.isString() || hub.asString().length() > MAX_ID_LENGTH)) {
+            throw new InvalidTelemetryReading("O hubId tem de ser texto com no máximo " + MAX_ID_LENGTH + " caracteres.");
+        }
         return new TelemetryReading(vehicleId, instant(text(root, "originAt")), battery.intValue(),
                 bool(root, "locked"), hub == null || hub.isNull() ? null : hub.asString(), bool(root, "shock"));
     }
