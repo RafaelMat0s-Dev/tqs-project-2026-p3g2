@@ -34,7 +34,7 @@ describe("LoginPage", () => {
   it("guarda a sessão, vai para a página inicial e mostra o nome na barra", async () => {
     const fetchMock = vi.fn().mockResolvedValue(Response.json(SESSION));
     vi.stubGlobal("fetch", fetchMock);
-    renderAt("/entrar");
+    renderAt("/login");
 
     await submitCode("MARTA-2026");
 
@@ -48,7 +48,7 @@ describe("LoginPage", () => {
 
   it("desativa o botão durante o pedido", async () => {
     vi.stubGlobal("fetch", vi.fn().mockReturnValue(new Promise(() => undefined)));
-    renderAt("/entrar");
+    renderAt("/login");
 
     await submitCode("X");
 
@@ -67,7 +67,7 @@ describe("LoginPage", () => {
     [500, {}, "Não foi possível entrar. Tente novamente dentro de momentos."],
   ])("mostra a mensagem do estado %i", async (status, body, message) => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(problem(status, body)));
-    renderAt("/entrar");
+    renderAt("/login");
 
     await submitCode("ERRADO");
 
@@ -80,7 +80,7 @@ describe("LoginPage", () => {
 
   it("uma falha de rede mostra a mensagem genérica", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("rede")));
-    renderAt("/entrar");
+    renderAt("/login");
 
     await submitCode("X");
 
@@ -90,7 +90,7 @@ describe("LoginPage", () => {
   it("um 429 não apaga a sessão já guardada", async () => {
     saveSession(SESSION);
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(problem(429, {})));
-    renderAt("/entrar");
+    renderAt("/login");
 
     await submitCode("X");
 
@@ -103,7 +103,7 @@ describe("barra de topo e sessão", () => {
   it("sem sessão mostra a ligação Entrar", () => {
     renderAt("/");
 
-    expect(screen.getByRole("link", { name: "Entrar" })).toHaveAttribute("href", "/entrar");
+    expect(screen.getByRole("link", { name: "Entrar" })).toHaveAttribute("href", "/login");
   });
 
   it("Sair limpa a sessão", async () => {
@@ -116,7 +116,7 @@ describe("barra de topo e sessão", () => {
     expect(screen.getByRole("link", { name: "Entrar" })).toBeInTheDocument();
   });
 
-  it("uma sessão expirada leva a /entrar com a mensagem de sessão terminada", async () => {
+  it("uma sessão expirada leva a /login com a mensagem de sessão terminada", async () => {
     saveSession({ ...SESSION, expiresAt: "2000-01-01T00:00:00Z" });
     renderAt("/");
 

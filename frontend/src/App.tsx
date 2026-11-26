@@ -16,7 +16,7 @@ export function App() {
   useEffect(() => {
     if (readSession() === null && hasStoredSession()) {
       clearSession();
-      void navigate("/entrar?sessao=terminou", { replace: true });
+      void navigate("/login?sessao=terminou", { replace: true });
     }
   }, [location.pathname, navigate]);
 
@@ -35,7 +35,7 @@ export function App() {
         <span className="brand">MarAzul</span>
         <div className="topbar-session">
           {session === null ? (
-            <Link to="/entrar">Entrar</Link>
+            <Link to="/login">Entrar</Link>
           ) : (
             <>
               <span>Olá, {session.name}</span>
@@ -49,7 +49,7 @@ export function App() {
       <main id="conteudo" className="shell">
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/entrar" element={<LoginPage />} />
+          <Route path="/login" element={<LoginPage />} />
           <Route path="/reservas/:reservationId/desbloquear" element={<UnlockPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
