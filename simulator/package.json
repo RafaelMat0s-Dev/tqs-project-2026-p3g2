@@ -12,6 +12,6 @@
     "test:coverage": "node --test --experimental-test-coverage --test-coverage-lines=80"
   },
   "dependencies": {
-    "mqtt": "^5.16.1"
+    "mqtt": "5.16.1"
   }
 }
