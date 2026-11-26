@@ -7,8 +7,9 @@ export function createLoop({ fleet, publisher, rate, random, clock }) {
 
   const tick = () => {
     fleet[next] = stepVehicle(fleet[next], random);
+    const { vehicleId } = fleet[next];
     publisher.publish(toReading(fleet[next], clock)).catch((error) => {
-      console.error(`Falha ao publicar ${fleet[next].vehicleId}: ${error.message}`);
+      console.error(`Falha ao publicar ${vehicleId}: ${error.message}`);
     });
     next = (next + 1) % fleet.length;
   };
