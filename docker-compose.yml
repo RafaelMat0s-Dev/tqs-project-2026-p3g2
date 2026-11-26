@@ -55,6 +55,8 @@ services:
     build: ./simulator
     environment:
       MQTT_URL: mqtt://mosquitto:1883
+      PUBLISH_RATE: ${PUBLISH_RATE:-10}
+      FLEET_SIZE: ${FLEET_SIZE:-60}
     depends_on:
       mosquitto:
         condition: service_healthy
