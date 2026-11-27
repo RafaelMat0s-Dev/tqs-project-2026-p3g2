@@ -15,6 +15,7 @@ features/
 | Etiqueta | Uso |
 | :- | :- |
 | `@REQ_SCRUM-<n>` | liga o cenário à história no Xray (chave Jira da história) |
+| `@TEST_SCRUM-<n>` | liga o cenário ao seu Test no Xray (chave do Test); fica na linha acima do `Cenário` |
 | `@US-Ex-yy` | identificador da história |
 | `@Ex` | épico |
 | `@BRx` | regra de negócio exercitada (uma por regra) |
@@ -27,5 +28,6 @@ features/
 1. A QA publica o `.feature` com `@wip` um dia antes (subtarefa 1 da história).
 2. Quem implementa escreve os passos numa classe em `pt.marazul.cucumber.steps` e reutiliza `ApiSteps`.
 3. Tira o `@wip` no mesmo PR da história; o CI corre o cenário e o job `xray` envia o resultado.
+4. Num cenário novo, o job `xray` cria o Test no primeiro merge para a `main`. No PR seguinte acrescenta `@TEST_SCRUM-<n>` com a chave criada: sem essa etiqueta o Xray não associa o resultado ao Test.
 
 Correr só uma história: `mvn verify -Dcucumber.filter.tags="@US-E4-01"`.
