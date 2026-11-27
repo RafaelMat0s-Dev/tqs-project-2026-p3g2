@@ -3,7 +3,7 @@ package pt.marazul.fleet.api;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.Validator;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -25,9 +25,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
-import tools.jackson.core.JacksonException;
-import tools.jackson.databind.json.JsonMapper;
 import pt.marazul.fleet.application.VehicleNotFound;
 
 @RestController
@@ -35,21 +32,16 @@ import pt.marazul.fleet.application.VehicleNotFound;
 @PreAuthorize("hasAnyRole('COORDINATOR','TECHNICIAN')")
 public class VehicleController {
     private final FleetApi fleet;
-    private final JsonMapper json;
-    private final Validator validator;
 
-    public VehicleController(FleetApi fleet, JsonMapper json, Validator validator) {
+    public VehicleController(FleetApi fleet) {
         this.fleet = fleet;
-        this.json = json;
-        this.validator = validator;
     }
 
     @PostMapping
     @Operation(summary = "Registar veículo (nasce desativado)")
     @ApiResponse(responseCode = "201", description = "Veículo registado")
     @ApiResponse(responseCode = "409", description = "Código já existente (VEHICLE_CODE)")
-    public ResponseEntity<VehicleView> register(@RequestBody String body) {
-        RegisterVehicleRequest request = parse(body);
+    public ResponseEntity<VehicleView> register(@Valid @RequestBody RegisterVehicleRequest request) {
         VehicleView view = fleet.register(request.code(), request.type(), request.baseHubCode());
         return ResponseEntity.created(URI.create("/api/vehicles/" + view.id())).body(view);
     }
@@ -83,19 +75,6 @@ public class VehicleController {
     public List<VehicleView> list(@RequestParam Optional<VehicleView.Status> status,
             @RequestParam Optional<String> hub) {
         return fleet.list(status, hub);
-    }
-
-    // O corpo é lido aqui, depois do @PreAuthorize, para que um papel sem permissão receba 403 e não 400.
-    private RegisterVehicleRequest parse(String body) {
-        try {
-            RegisterVehicleRequest request = json.readValue(body, RegisterVehicleRequest.class);
-            if (request != null && validator.validate(request).isEmpty()) {
-                return request;
-            }
-        } catch (JacksonException ignored) {
-            // cai no 400 abaixo
-        }
-        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Pedido de registo de veículo inválido");
     }
 
     @ExceptionHandler(VehicleNotFound.class)
