@@ -70,6 +70,18 @@ class IdentitySecurityIT {
     }
 
     @Test
+    void clientManagerCannotUpdateContract() throws Exception {
+        String email = "helena-" + System.nanoTime() + "@marazul.test";
+        accounts.create(email, "Helena Gestora", PASSWORD, StaffRole.CLIENT_MANAGER);
+        var cookie = login(email).getResponse().getCookie(IdentityController.AUTH_COOKIE);
+
+        mvc.perform(put("/api/contract").with(csrf()).cookie(cookie))
+                .andExpect(status().isForbidden())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.type").value("urn:marazul:erro:acesso-negado"));
+    }
+
+    @Test
     void administratorCreatesStaffAccountAndDuplicateEmailIsRejected() throws Exception {
         String adminEmail = "admin-" + System.nanoTime() + "@marazul.test";
         accounts.create(adminEmail, "Sofia Administradora", PASSWORD, StaffRole.ADMINISTRATOR);
