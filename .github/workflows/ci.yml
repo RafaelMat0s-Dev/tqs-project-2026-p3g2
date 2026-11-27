@@ -143,6 +143,14 @@ jobs:
           curl -fsS http://localhost:5173/actuator/health/readiness | grep -q '"status":"UP"'
           curl -fsS http://localhost:5173/v3/api-docs > /dev/null
           curl -fsS http://localhost:8090/health | grep -q '"status":"UP"'
+      - name: Telemetry smoke test
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:5173/api/telemetry/vehicles/B-01 > /dev/null; then exit 0; fi
+            sleep 1
+          done
+          echo "Telemetry for B-01 did not become available within 30 s" >&2
+          exit 1
       - name: Logs
         if: failure()
         run: docker compose logs --no-color

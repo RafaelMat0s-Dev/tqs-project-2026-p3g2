@@ -1,8 +1,33 @@
+import mqtt from "mqtt";
+import { readConfig } from "./config.js";
+import { createFleet } from "./fleet.js";
+import { HUBS } from "./hubs.js";
+import { createLoop } from "./loop.js";
+import { createPublisher } from "./publisher.js";
 import { createServer } from "./server.js";
 
-const port = Number(process.env.PORT ?? 8090);
-const brokerUrl = process.env.MQTT_URL ?? "mqtt://localhost:1883";
+let config;
+try {
+  config = readConfig(process.env);
+} catch (error) {
+  console.error(error.message);
+  process.exit(1);
+}
 
-createServer({ brokerUrl }).listen(port, () => {
-  console.log(`Telemetry simulator listening on ${port} (broker ${brokerUrl})`);
+const client = mqtt.connect(config.mqttUrl);
+client.on("error", (error) => console.error(`MQTT: ${error.message}`));
+
+const random = Math.random;
+const clock = () => new Date();
+const fleet = createFleet({ size: config.fleetSize, hubs: HUBS, random });
+const publisher = createPublisher(client);
+
+createLoop({ fleet, publisher, rate: config.publishRate, random, clock }).start();
+createServer({
+  brokerUrl: config.mqttUrl,
+  publisher,
+  fleet,
+  isConnected: () => client.connected,
+}).listen(config.port, () => {
+  console.log(`Telemetry simulator listening on ${config.port} (broker ${config.mqttUrl})`);
 });

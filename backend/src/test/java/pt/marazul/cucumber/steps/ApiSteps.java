@@ -26,7 +26,7 @@ public class ApiSteps {
 
     @Quando("consulto {string}")
     public void consulto(String path) {
-        response = given().accept(ContentType.JSON).get(path);
+        response = given().accept("application/json, text/plain;q=0.9").get(path);
     }
 
     @Quando("envio para {string} o pedido:")
