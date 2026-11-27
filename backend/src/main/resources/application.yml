@@ -48,5 +48,9 @@ springdoc:
     path: /swagger-ui.html
 
 marazul:
+  contract:
+    pickup-window: 15m
+  trip:
+    expiry-interval: 30s
   telemetry:
     broker-url: ${MQTT_URL:tcp://localhost:1883}

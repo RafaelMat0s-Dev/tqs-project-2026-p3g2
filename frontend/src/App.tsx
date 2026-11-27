@@ -1,6 +1,7 @@
 import { Route, Routes } from "react-router";
 import { HomePage } from "./pages/HomePage";
 import { NotFoundPage } from "./pages/NotFoundPage";
+import { UnlockPage } from "./pages/UnlockPage";
 
 export function App() {
   return (
@@ -14,6 +15,7 @@ export function App() {
       <main id="conteudo" className="shell">
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/reservas/:reservationId/desbloquear" element={<UnlockPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </main>

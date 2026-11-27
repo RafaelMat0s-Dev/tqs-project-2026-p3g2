@@ -6,16 +6,19 @@ import pt.marazul.booking.domain.Reservation;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 
 @Repository
 public class InMemoryReservationRepository implements ReservationRepository {
-    private final List<Reservation> reservations = new CopyOnWriteArrayList<>();
+    private final Map<UUID, Reservation> reservations = new ConcurrentHashMap<>();
 
     @Override
     public List<Reservation> findOverlapping(UUID vehicleId, Instant startsAt, Instant endsAt) {
-        return reservations.stream()
+        return notExpired()
                 .filter(r -> r.vehicleId().equals(vehicleId))
                 .filter(r -> r.startsAt().isBefore(endsAt) && startsAt.isBefore(r.endsAt()))
                 .toList();
@@ -23,15 +26,32 @@ public class InMemoryReservationRepository implements ReservationRepository {
 
     @Override
     public List<Reservation> findActiveForGuest(String guestId, Instant startsAt, Instant endsAt) {
-        return reservations.stream()
+        return notExpired()
                 .filter(r -> r.guestId().equals(guestId))
                 .filter(r -> r.startsAt().isBefore(endsAt) && startsAt.isBefore(r.endsAt()))
                 .toList();
     }
 
     @Override
+    public Optional<Reservation> findById(UUID id) {
+        return Optional.ofNullable(reservations.get(id));
+    }
+
+    @Override
+    public List<Reservation> findReservedStartedBefore(Instant instant) {
+        return reservations.values().stream()
+                .filter(r -> r.status() == Reservation.Status.RESERVED)
+                .filter(r -> r.startsAt().isBefore(instant))
+                .toList();
+    }
+
+    @Override
     public Reservation save(Reservation reservation) {
-        reservations.add(reservation);
+        reservations.put(reservation.id(), reservation);
         return reservation;
+    }
+
+    private Stream<Reservation> notExpired() {
+        return reservations.values().stream().filter(r -> r.status() != Reservation.Status.EXPIRED);
     }
 }
