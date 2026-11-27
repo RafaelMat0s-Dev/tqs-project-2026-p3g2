@@ -13,6 +13,7 @@ import pt.marazul.identity.application.JwtService;
 import pt.marazul.identity.domain.StaffRole;
 import pt.marazul.support.TestcontainersConfiguration;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
@@ -40,7 +41,7 @@ class IdentitySecurityIT {
         String email = "tech-" + System.nanoTime() + "@marazul.test";
         accounts.create(email, "Nídia Tavares", PASSWORD, StaffRole.TECHNICIAN);
 
-        MvcResult login = mvc.perform(post("/api/auth/login")
+        MvcResult login = mvc.perform(post("/api/auth/login").with(csrf())
                         .contentType("application/json")
                         .content("{\"email\":\"" + email + "\",\"password\":\"" + PASSWORD + "\"}"))
                 .andExpect(status().isOk())
@@ -50,7 +51,7 @@ class IdentitySecurityIT {
         var token = login.getResponse().getCookie(IdentityController.AUTH_COOKIE).getValue();
         org.assertj.core.api.Assertions.assertThat(jwt.parse(token)).isPresent();
 
-        mvc.perform(put("/api/contract").cookie(login.getResponse().getCookie(IdentityController.AUTH_COOKIE)))
+        mvc.perform(put("/api/contract").with(csrf()).cookie(login.getResponse().getCookie(IdentityController.AUTH_COOKIE)))
                 .andExpect(status().isForbidden())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.type").value("urn:marazul:erro:acesso-negado"))
@@ -59,7 +60,7 @@ class IdentitySecurityIT {
                 .andExpect(jsonPath("$.detail").exists())
                 .andExpect(jsonPath("$.instance").value("/api/contract"));
 
-        mvc.perform(post("/api/vehicles").cookie(login.getResponse().getCookie(IdentityController.AUTH_COOKIE))
+        mvc.perform(post("/api/vehicles").with(csrf()).cookie(login.getResponse().getCookie(IdentityController.AUTH_COOKIE))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"hubId\":\"hotel-alvina-mar\",\"type\":\"E_BIKE\",\"batteryPercentage\":80}"))
                 .andExpect(status().isForbidden())
@@ -79,9 +80,9 @@ class IdentitySecurityIT {
                 + "\",\"displayName\":\"Nídia Tavares\",\"password\":\"" + PASSWORD
                 + "\",\"role\":\"TECHNICIAN\"}";
 
-        mvc.perform(post("/api/auth/staff").cookie(cookie).contentType("application/json").content(body))
+        mvc.perform(post("/api/auth/staff").with(csrf()).cookie(cookie).contentType("application/json").content(body))
                 .andExpect(status().isCreated());
-        mvc.perform(post("/api/auth/staff").cookie(cookie).contentType("application/json").content(body))
+        mvc.perform(post("/api/auth/staff").with(csrf()).cookie(cookie).contentType("application/json").content(body))
                 .andExpect(status().isConflict());
     }
 
@@ -91,19 +92,19 @@ class IdentitySecurityIT {
         accounts.create(adminEmail, "Sofia Administradora", PASSWORD, StaffRole.ADMINISTRATOR);
         var cookie = login(adminEmail).getResponse().getCookie(IdentityController.AUTH_COOKIE);
 
-        MvcResult created = mvc.perform(post("/api/vehicles").cookie(cookie).contentType("application/json")
+        MvcResult created = mvc.perform(post("/api/vehicles").with(csrf()).cookie(cookie).contentType("application/json")
                         .content("{\"hubId\":\"hotel-alvina-mar\",\"type\":\"E_BIKE\",\"batteryPercentage\":80}"))
                 .andExpect(status().isCreated())
                 .andReturn();
         String id = com.jayway.jsonpath.JsonPath.read(created.getResponse().getContentAsString(), "$.id");
 
-        mvc.perform(put("/api/contract").cookie(cookie)).andExpect(status().isOk());
+        mvc.perform(put("/api/contract").with(csrf()).cookie(cookie)).andExpect(status().isOk());
         mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch("/api/vehicles/" + id + "/status")
-                        .cookie(cookie).contentType("application/json")
+                        .with(csrf()).cookie(cookie).contentType("application/json")
                         .content("{\"status\":\"RETIRED\"}"))
                 .andExpect(status().isOk());
         mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch("/api/vehicles/" + id + "/status")
-                        .cookie(cookie).contentType("application/json")
+                        .with(csrf()).cookie(cookie).contentType("application/json")
                         .content("{\"status\":\"AVAILABLE\"}"))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
@@ -112,8 +113,23 @@ class IdentitySecurityIT {
                 .andExpect(jsonPath("$.instance").value("/api/vehicles/" + id + "/status"));
     }
 
+    @Test
+    void staffChangesWithoutCsrfTokenAreRejected() throws Exception {
+        String adminEmail = "csrf-admin-" + System.nanoTime() + "@marazul.test";
+        accounts.create(adminEmail, "Sofia Administradora", PASSWORD, StaffRole.ADMINISTRATOR);
+        var cookie = login(adminEmail).getResponse().getCookie(IdentityController.AUTH_COOKIE);
+        String body = "{\"email\":\"rui-" + System.nanoTime()
+                + "@marazul.test\",\"displayName\":\"Rui Sampaio\",\"password\":\"" + PASSWORD
+                + "\",\"role\":\"COORDINATOR\"}";
+
+        mvc.perform(post("/api/auth/staff").cookie(cookie).contentType("application/json").content(body))
+                .andExpect(status().isForbidden())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.type").value("urn:marazul:erro:acesso-negado"));
+    }
+
     private MvcResult login(String email) throws Exception {
-        return mvc.perform(post("/api/auth/login")
+        return mvc.perform(post("/api/auth/login").with(csrf())
                         .contentType("application/json")
                         .content("{\"email\":\"" + email + "\",\"password\":\"" + PASSWORD + "\"}"))
                 .andExpect(status().isOk())

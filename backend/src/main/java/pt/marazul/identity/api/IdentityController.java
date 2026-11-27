@@ -9,6 +9,8 @@ import jakarta.validation.constraints.Size;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -49,6 +51,13 @@ public class IdentityController {
         response.addHeader("Set-Cookie", cookie.toString());
         return StaffResponse.from(account);
     }
+
+    @GetMapping("/csrf")
+    public CsrfResponse csrf(CsrfToken token) {
+        return new CsrfResponse(token.getHeaderName(), token.getToken());
+    }
+
+    public record CsrfResponse(String headerName, String token) { }
 
     public record CreateStaffRequest(
             @NotBlank @Email String email,

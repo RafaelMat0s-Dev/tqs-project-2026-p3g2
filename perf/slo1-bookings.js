@@ -17,6 +17,16 @@ export const options = {
   },
 };
 
+let csrf;
+
+function csrfHeaders() {
+  if (csrf === undefined) {
+    const response = http.get(`${BASE_URL}/api/auth/csrf`, { tags: { name: "GET /api/auth/csrf" } });
+    csrf = { [response.json("headerName")]: response.json("token") };
+  }
+  return csrf;
+}
+
 export default function () {
   const vehicleId = VEHICLE_IDS.length > 0 ? VEHICLE_IDS[Math.floor(Math.random() * VEHICLE_IDS.length)] : uuidv4();
   const start = new Date(Date.now() + 24 * 3600 * 1000);
@@ -28,7 +38,7 @@ export default function () {
   });
 
   const response = http.post(`${BASE_URL}/api/bookings`, body, {
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...csrfHeaders() },
     tags: { name: "POST /api/bookings" },
   });
   check(response, { "answer is 201, 409 or 422": (r) => [201, 409, 422].includes(r.status) });
