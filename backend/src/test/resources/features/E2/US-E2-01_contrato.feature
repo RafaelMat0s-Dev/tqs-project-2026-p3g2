@@ -1,5 +1,5 @@
 # language: pt
-@REQ_SCRUM-25 @US-E2-01 @E2 @BR9 @BR10 @BR11 @BR15 @wip
+@REQ_SCRUM-25 @US-E2-01 @E2 @BR9 @BR10 @BR11 @BR15
 Funcionalidade: Contrato base: tarifário, caução e metas de SLA
   Como administradora
   Quero registar o contrato com o tarifário, a caução e as metas de SLA
