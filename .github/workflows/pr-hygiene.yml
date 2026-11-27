@@ -10,6 +10,7 @@ permissions:
 jobs:
   pr-hygiene:
     name: pr-hygiene
+    if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
       - name: Jira key, branch name and AI label
