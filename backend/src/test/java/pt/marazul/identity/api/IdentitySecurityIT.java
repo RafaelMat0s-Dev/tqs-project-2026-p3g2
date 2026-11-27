@@ -15,6 +15,7 @@ import pt.marazul.support.TestcontainersConfiguration;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -54,7 +55,7 @@ class IdentitySecurityIT {
         var token = login.getResponse().getCookie(IdentityController.AUTH_COOKIE).getValue();
         org.assertj.core.api.Assertions.assertThat(jwt.parse(token)).isPresent();
 
-        mvc.perform(post("/api/contract/versions").with(csrf()).cookie(login.getResponse().getCookie(IdentityController.AUTH_COOKIE))
+        mvc.perform(put("/api/contract").with(csrf()).cookie(login.getResponse().getCookie(IdentityController.AUTH_COOKIE))
                         .contentType(MediaType.APPLICATION_JSON).content(CONTRACT_BODY))
                 .andExpect(status().isForbidden())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
@@ -62,7 +63,7 @@ class IdentitySecurityIT {
                 .andExpect(jsonPath("$.title").value("Acesso negado"))
                 .andExpect(jsonPath("$.status").value(403))
                 .andExpect(jsonPath("$.detail").exists())
-                .andExpect(jsonPath("$.instance").value("/api/contract/versions"));
+                .andExpect(jsonPath("$.instance").value("/api/contract"));
 
         mvc.perform(post("/api/vehicles").with(csrf()).cookie(login.getResponse().getCookie(IdentityController.AUTH_COOKIE))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -79,7 +80,7 @@ class IdentitySecurityIT {
         accounts.create(email, "Helena Gestora", PASSWORD, StaffRole.CLIENT_MANAGER);
         var cookie = login(email).getResponse().getCookie(IdentityController.AUTH_COOKIE);
 
-        mvc.perform(post("/api/contract/versions").with(csrf()).cookie(cookie)
+        mvc.perform(put("/api/contract").with(csrf()).cookie(cookie)
                         .contentType(MediaType.APPLICATION_JSON).content(CONTRACT_BODY))
                 .andExpect(status().isForbidden())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))

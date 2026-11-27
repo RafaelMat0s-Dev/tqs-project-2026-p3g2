@@ -26,7 +26,7 @@ import java.time.ZoneOffset;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -61,7 +61,7 @@ class ContractControllerTest {
     }
 
     private MockHttpServletRequestBuilder publish(String json) {
-        return post("/api/contract/versions").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(json);
+        return put("/api/contract").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(json);
     }
 
     @Test
@@ -117,6 +117,14 @@ class ContractControllerTest {
                 .andExpect(jsonPath("$.status").value(403));
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"CLIENT_MANAGER", "TECHNICIAN", "COORDINATOR"})
+    void anInvalidBodyFromAForbiddenRoleIsStill403(String role) throws Exception {
+        mvc.perform(publish("{}").with(user("staff").roles(role)))
+                .andExpect(status().isForbidden())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON));
+    }
+
     @Test
     @WithMockUser(roles = "ADMINISTRATOR")
     void administratorPublishesVersion2AndVersion1IsUntouched() throws Exception {
@@ -169,7 +177,7 @@ class ContractControllerTest {
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.status").value(422))
                 .andExpect(jsonPath("$.rule").value(rule))
-                .andExpect(jsonPath("$.instance").value("/api/contract/versions"));
+                .andExpect(jsonPath("$.instance").value("/api/contract"));
     }
 
     @Test

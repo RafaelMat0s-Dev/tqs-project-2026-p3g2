@@ -2,6 +2,7 @@ package pt.marazul.identity.infrastructure;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
@@ -57,6 +58,7 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
                         .requestMatchers(GUEST_ENDPOINTS_UNTIL_GUEST_LOGIN).permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/api/contract").hasRole("ADMINISTRATOR")
                         .anyRequest().authenticated())
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint((request, response, exception) -> writeProblem(

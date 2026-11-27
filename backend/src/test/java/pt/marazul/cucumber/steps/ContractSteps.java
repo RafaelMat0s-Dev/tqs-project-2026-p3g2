@@ -63,7 +63,7 @@ public class ContractSteps {
                 + ",\"slaNormalHours\":" + base.slaNormalHours()
                 + ",\"minimumBatteryPercentage\":" + base.minimumBatteryPercentage()
                 + ",\"pickupWindowMinutes\":" + base.pickupWindowMinutes() + "}";
-        api.envioOPedido("/api/contract/versions", body);
+        api.envioUmPutPara("/api/contract", body);
         if (api.lastResponse().statusCode() == 201) {
             assertThat(api.lastResponse().jsonPath().getInt("version")).isEqualTo(version);
         }

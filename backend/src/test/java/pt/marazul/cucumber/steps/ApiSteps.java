@@ -6,6 +6,7 @@ import io.cucumber.java.pt.Quando;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
+import io.restassured.specification.RequestSpecification;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import pt.marazul.identity.api.IdentityController;
 
@@ -38,6 +39,11 @@ public class ApiSteps {
         response = post(path, body, sessionCookies);
     }
 
+    @Quando("envio um PUT para {string} com o pedido:")
+    public void envioUmPutPara(String path, String body) {
+        response = withCsrf(body, sessionCookies).put(path);
+    }
+
     public void autenticar(String email, String password) {
         Response login = post("/api/auth/login",
                 "{\"email\":\"" + email + "\",\"password\":\"" + password + "\"}", Map.of());
@@ -46,10 +52,14 @@ public class ApiSteps {
     }
 
     private static Response post(String path, String body, Map<String, String> cookies) {
+        return withCsrf(body, cookies).post(path);
+    }
+
+    private static RequestSpecification withCsrf(String body, Map<String, String> cookies) {
         Response csrf = given().get("/api/auth/csrf");
         return given().cookies(csrf.getCookies()).cookies(cookies)
                 .header(csrf.jsonPath().getString("headerName"), csrf.jsonPath().getString("token"))
-                .contentType(ContentType.JSON).accept(ContentType.JSON).body(body).post(path);
+                .contentType(ContentType.JSON).accept(ContentType.JSON).body(body);
     }
 
     @Então("a resposta tem o estado {int}")
