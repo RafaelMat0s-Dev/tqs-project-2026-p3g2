@@ -19,6 +19,22 @@ public class InMemoryVehicles implements VehicleRepository {
         return vehicle;
     }
 
+    /** Quando verdadeiro simula um estado alterado entretanto. */
+    public boolean changeStatusConflicts;
+    /** Pedidos feitos a changeStatus, como "DE>PARA". */
+    public final List<String> changes = new java.util.ArrayList<>();
+
+    @Override
+    public boolean changeStatus(UUID id, VehicleStatus from, VehicleStatus to) {
+        changes.add(from + ">" + to);
+        Vehicle v = store.get(id);
+        if (changeStatusConflicts || v == null || v.status() != from) {
+            return false;
+        }
+        store.put(id, v.moveTo(to));
+        return true;
+    }
+
     @Override
     public Optional<Vehicle> findById(UUID id) {
         return Optional.ofNullable(store.get(id));

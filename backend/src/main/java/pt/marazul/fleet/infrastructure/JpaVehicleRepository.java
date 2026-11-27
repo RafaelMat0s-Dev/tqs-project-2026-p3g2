@@ -29,6 +29,11 @@ public class JpaVehicleRepository implements VehicleRepository {
     }
 
     @Override
+    public boolean changeStatus(UUID id, VehicleStatus from, VehicleStatus to) {
+        throw new UnsupportedOperationException("esqueleto SCRUM-20");
+    }
+
+    @Override
     public Optional<Vehicle> findById(UUID id) {
         return jpa.findById(id).map(FleetVehicleEntity::toDomain);
     }

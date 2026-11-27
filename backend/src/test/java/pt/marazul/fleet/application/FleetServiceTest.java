@@ -94,6 +94,36 @@ class FleetServiceTest {
         }
     }
 
+    static Stream<Arguments> operationsWithAValidSourceState() {
+        return operationsByInitialState()
+                .filter(a -> ((VehicleStatus) a.get()[1]).canMoveTo(((Op) a.get()[0]).target()));
+    }
+
+    @ParameterizedTest(name = "{0} a partir de {1} chama changeStatus(lido, alvo)")
+    @MethodSource("operationsWithAValidSourceState")
+    void transitionCallsChangeStatusWithTheReadStateAndTheTarget(Op op, VehicleStatus from) {
+        Vehicle seeded = vehicles.seed("B-17", "sao-bras", from);
+
+        op.call().apply(service, seeded.id());
+
+        assertThat(vehicles.changes).containsExactly(from + ">" + op.target());
+    }
+
+    @ParameterizedTest(name = "{0} a partir de {1} com estado alterado entretanto")
+    @MethodSource("operationsWithAValidSourceState")
+    void stateChangedMeanwhileIsConflictWithRuleVehicleStateChanged(Op op, VehicleStatus from) {
+        Vehicle seeded = vehicles.seed("B-17", "sao-bras", from);
+        vehicles.changeStatusConflicts = true;
+
+        assertThatThrownBy(() -> op.call().apply(service, seeded.id()))
+                .isInstanceOfSatisfying(BusinessRuleConflict.class, e -> {
+                    assertThat(e.rule()).isEqualTo("VEHICLE_STATE_CHANGED");
+                    assertThat(e.getMessage())
+                            .isEqualTo("O estado do veículo B-17 mudou entretanto; repita a operação.");
+                });
+        assertThat(vehicles.findById(seeded.id()).orElseThrow().status()).isEqualTo(from);
+    }
+
     @ParameterizedTest(name = "{0} com id inexistente")
     @MethodSource("operations")
     void operationOnUnknownIdIsVehicleNotFound(Op op) {

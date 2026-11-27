@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -20,6 +21,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import pt.marazul.booking.domain.Vehicle;
 import pt.marazul.fleet.api.FleetApi;
 import pt.marazul.fleet.api.VehicleView;
+import pt.marazul.shared.domain.BusinessRuleViolation;
 
 class FleetVehicleRepositoryTest {
     private static final UUID ID = UUID.fromString("00000000-0000-0000-0000-000000000017");
@@ -105,7 +107,7 @@ class FleetVehicleRepositoryTest {
     }
 
     @ParameterizedTest
-    @EnumSource(VehicleView.Status.class)
+    @EnumSource(value = VehicleView.Status.class, mode = EnumSource.Mode.EXCLUDE, names = "RESERVED")
     void saveWithTheSameStateCallsNoOperation(VehicleView.Status status) {
         when(fleet.findById(ID)).thenReturn(Optional.of(view(status, 80)));
 
@@ -116,6 +118,16 @@ class FleetVehicleRepositoryTest {
         verify(fleet, never()).startTrip(ID);
         verify(fleet, never()).endTrip(ID);
         verify(fleet, never()).sendToMaintenance(ID);
+    }
+
+    @Test
+    void saveReservedWhileTheFleetIsAlreadyReservedStillCallsMarkReservedOnceAndPropagatesItsRefusal() {
+        when(fleet.findById(ID)).thenReturn(Optional.of(view(VehicleView.Status.RESERVED, 80)));
+        when(fleet.markReserved(ID)).thenThrow(new BusinessRuleViolation("VEHICLE_LIFECYCLE", "Transição inválida"));
+
+        assertThatThrownBy(() -> repository.save(new Vehicle(ID, "sao-bras", "E_BIKE", 80, Vehicle.Status.RESERVED)))
+                .isInstanceOf(BusinessRuleViolation.class);
+        verify(fleet, times(1)).markReserved(ID);
     }
 
     @ParameterizedTest

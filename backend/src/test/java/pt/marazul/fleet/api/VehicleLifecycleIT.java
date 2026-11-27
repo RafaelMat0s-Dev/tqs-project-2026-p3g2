@@ -12,7 +12,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.jayway.jsonpath.JsonPath;
 import jakarta.servlet.http.Cookie;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -106,6 +113,45 @@ class VehicleLifecycleIT {
                         .content(body(code, "praia-da-ribeira")))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.rule").value("VEHICLE_CODE"));
+    }
+
+    @Test
+    void simultaneousRegistrationsOfTheSameCodeGiveOne201AndOne409() throws Exception {
+        Cookie coordinator = sessionOf(StaffRole.COORDINATOR);
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        try {
+            for (int attempt = 0; attempt < 5; attempt++) {
+                String code = "B-" + ThreadLocalRandom.current().nextInt(100, 1000);
+                CountDownLatch start = new CountDownLatch(1);
+                List<Future<MvcResult>> calls = new ArrayList<>();
+                for (int t = 0; t < 2; t++) {
+                    calls.add(pool.submit(() -> {
+                        start.await();
+                        return mvc.perform(post("/api/vehicles").with(csrf()).cookie(coordinator)
+                                .contentType(MediaType.APPLICATION_JSON).content(body(code, "sao-bras"))).andReturn();
+                    }));
+                }
+                start.countDown();
+                List<Integer> statuses = new ArrayList<>();
+                MvcResult conflict = null;
+                for (Future<MvcResult> f : calls) {
+                    MvcResult r = f.get(15, TimeUnit.SECONDS);
+                    statuses.add(r.getResponse().getStatus());
+                    if (r.getResponse().getStatus() == 409) {
+                        conflict = r;
+                    }
+                }
+                if (statuses.contains(201)) { // dois 409 só se o código já existisse de outro teste
+                    assertThat(statuses).containsExactlyInAnyOrder(201, 409);
+                    assertThat(field(conflict, "$.rule")).isEqualTo("VEHICLE_CODE");
+                    return;
+                }
+                assertThat(statuses).containsOnly(409);
+            }
+            throw new AssertionError("sem código B-xxx livre");
+        } finally {
+            pool.shutdownNow();
+        }
     }
 
     @Test

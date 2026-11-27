@@ -16,5 +16,8 @@ public interface VehicleRepository {
 
     List<Vehicle> list(Optional<VehicleStatus> status, Optional<String> hub);
 
+    /** Muda o estado só se ainda for {@code from}; devolve false se entretanto mudou. */
+    boolean changeStatus(UUID id, VehicleStatus from, VehicleStatus to);
+
     boolean updateBatteryIfNewer(String code, int pct, Instant readingAt);
 }
