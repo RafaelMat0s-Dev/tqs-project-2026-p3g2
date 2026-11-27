@@ -1,5 +1,5 @@
 # language: pt
-@REQ_SCRUM-20 @US-E4-01 @E4 @wip
+@REQ_SCRUM-20 @US-E4-01 @E4
 Funcionalidade: Registo e ciclo de vida do veículo
   Como coordenador de operações
   Quero registar bicicletas e gerir o seu estado

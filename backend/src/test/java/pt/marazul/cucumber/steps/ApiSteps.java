@@ -47,6 +47,11 @@ public class ApiSteps {
         assertThat(response.jsonPath().getString(field)).isEqualTo(expected);
     }
 
+    /** Lets other step classes make their response the one the shared assertions check. */
+    public void remember(Response response) {
+        this.response = response;
+    }
+
     public Response lastResponse() {
         return response;
     }
