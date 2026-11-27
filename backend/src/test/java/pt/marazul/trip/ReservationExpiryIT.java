@@ -19,7 +19,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-@SpringBootTest(properties = {"marazul.contract.pickup-window=1s", "marazul.trip.expiry-interval=100ms"})
+@SpringBootTest(properties = "marazul.trip.expiry-interval=100ms")
 @Import(TestcontainersConfiguration.class)
 class ReservationExpiryIT {
     @Autowired
@@ -38,7 +38,7 @@ class ReservationExpiryIT {
     void theScheduledTaskExpiresAReservationThatIsNotUnlockedAndFreesTheVehicle() {
         UUID vehicleId = UUID.randomUUID();
         vehicles.save(new Vehicle(vehicleId, "hotel-alvina-mar", "E_BIKE", 80, Vehicle.Status.AVAILABLE));
-        Instant start = clock.instant();
+        Instant start = clock.instant().minus(Duration.ofMinutes(16));
         UUID reservationId = reservations.reserve(vehicleId, "marta-" + UUID.randomUUID(), start, start.plusSeconds(3600)).id();
 
         await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> {

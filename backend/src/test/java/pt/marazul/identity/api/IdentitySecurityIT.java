@@ -15,7 +15,6 @@ import pt.marazul.support.TestcontainersConfiguration;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -26,6 +25,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import(TestcontainersConfiguration.class)
 class IdentitySecurityIT {
     private static final String PASSWORD = "uma-palavra-passe-segura";
+    private static final String CONTRACT_BODY = "{\"unlockFeeCents\":100,\"perMinuteCents\":5,\"depositCents\":2500,"
+            + "\"surchargePerMinuteCents\":10,\"surchargeToleranceMinutes\":5,\"surchargeCapCents\":2500,"
+            + "\"slaCriticalHours\":4,\"slaHighHours\":24,\"slaNormalHours\":72,"
+            + "\"minimumBatteryPercentage\":25,\"pickupWindowMinutes\":15}";
 
     @Autowired
     MockMvc mvc;
@@ -51,14 +54,15 @@ class IdentitySecurityIT {
         var token = login.getResponse().getCookie(IdentityController.AUTH_COOKIE).getValue();
         org.assertj.core.api.Assertions.assertThat(jwt.parse(token)).isPresent();
 
-        mvc.perform(put("/api/contract").with(csrf()).cookie(login.getResponse().getCookie(IdentityController.AUTH_COOKIE)))
+        mvc.perform(post("/api/contract/versions").with(csrf()).cookie(login.getResponse().getCookie(IdentityController.AUTH_COOKIE))
+                        .contentType(MediaType.APPLICATION_JSON).content(CONTRACT_BODY))
                 .andExpect(status().isForbidden())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.type").value("urn:marazul:erro:acesso-negado"))
                 .andExpect(jsonPath("$.title").value("Acesso negado"))
                 .andExpect(jsonPath("$.status").value(403))
                 .andExpect(jsonPath("$.detail").exists())
-                .andExpect(jsonPath("$.instance").value("/api/contract"));
+                .andExpect(jsonPath("$.instance").value("/api/contract/versions"));
 
         mvc.perform(post("/api/vehicles").with(csrf()).cookie(login.getResponse().getCookie(IdentityController.AUTH_COOKIE))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -75,7 +79,8 @@ class IdentitySecurityIT {
         accounts.create(email, "Helena Gestora", PASSWORD, StaffRole.CLIENT_MANAGER);
         var cookie = login(email).getResponse().getCookie(IdentityController.AUTH_COOKIE);
 
-        mvc.perform(put("/api/contract").with(csrf()).cookie(cookie))
+        mvc.perform(post("/api/contract/versions").with(csrf()).cookie(cookie)
+                        .contentType(MediaType.APPLICATION_JSON).content(CONTRACT_BODY))
                 .andExpect(status().isForbidden())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.type").value("urn:marazul:erro:acesso-negado"));
@@ -110,7 +115,6 @@ class IdentitySecurityIT {
                 .andReturn();
         String id = com.jayway.jsonpath.JsonPath.read(created.getResponse().getContentAsString(), "$.id");
 
-        mvc.perform(put("/api/contract").with(csrf()).cookie(cookie)).andExpect(status().isOk());
         mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch("/api/vehicles/" + id + "/status")
                         .with(csrf()).cookie(cookie).contentType("application/json")
                         .content("{\"status\":\"RETIRED\"}"))

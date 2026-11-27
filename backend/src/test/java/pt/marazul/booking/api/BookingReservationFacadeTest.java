@@ -9,6 +9,8 @@ import pt.marazul.booking.application.ReservationService;
 import pt.marazul.booking.domain.Vehicle;
 import pt.marazul.booking.infrastructure.InMemoryReservationRepository;
 import pt.marazul.booking.infrastructure.InMemoryVehicleRepository;
+import pt.marazul.booking.infrastructure.ContractMinimumBatteryAdapter;
+import pt.marazul.support.FixedContractFacade;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -19,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class BookingReservationFacadeTest {
     private final InMemoryVehicleRepository vehicles = new InMemoryVehicleRepository();
-    private final ReservationService service = new ReservationService(vehicles, new InMemoryReservationRepository());
+    private final ReservationService service = new ReservationService(vehicles, new InMemoryReservationRepository(), new ContractMinimumBatteryAdapter(new FixedContractFacade()));
     private final ReservationFacade facade = new BookingReservationFacade(service);
     private final Instant start = Instant.parse("2099-01-01T15:02:00Z");
     private UUID vehicleId;

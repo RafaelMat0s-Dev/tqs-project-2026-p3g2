@@ -13,6 +13,8 @@ import pt.marazul.booking.application.VehicleRepository;
 import pt.marazul.booking.domain.Vehicle;
 import pt.marazul.booking.infrastructure.InMemoryReservationRepository;
 import pt.marazul.booking.infrastructure.InMemoryVehicleRepository;
+import pt.marazul.booking.infrastructure.ContractMinimumBatteryAdapter;
+import pt.marazul.support.FixedContractFacade;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -25,7 +27,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(ReservationController.class)
 @AutoConfigureMockMvc(addFilters = false)
-@Import({ReservationService.class, InMemoryVehicleRepository.class, InMemoryReservationRepository.class})
+@Import({ReservationService.class, InMemoryVehicleRepository.class, InMemoryReservationRepository.class, FixedContractFacade.class,
+        ContractMinimumBatteryAdapter.class})
 class ReservationControllerTest {
     private static final Instant START = Instant.now().plus(1, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS);
     private static final Instant END = START.plus(1, ChronoUnit.HOURS);

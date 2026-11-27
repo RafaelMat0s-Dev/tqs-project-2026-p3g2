@@ -16,7 +16,8 @@ import pt.marazul.booking.application.VehicleRepository;
 import pt.marazul.booking.domain.Vehicle;
 import pt.marazul.booking.infrastructure.InMemoryReservationRepository;
 import pt.marazul.booking.infrastructure.InMemoryVehicleRepository;
-import pt.marazul.contract.api.ConfiguredContractFacade;
+import pt.marazul.booking.infrastructure.ContractMinimumBatteryAdapter;
+import pt.marazul.support.FixedContractFacade;
 import pt.marazul.trip.application.UnlockService;
 import pt.marazul.trip.infrastructure.BookingReservationAdapter;
 import pt.marazul.trip.infrastructure.ContractPickupWindowAdapter;
@@ -35,7 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc(addFilters = false)
 @Import({UnlockService.class, BookingReservationAdapter.class, ContractPickupWindowAdapter.class, InMemoryTripRepository.class,
         BookingReservationFacade.class, ReservationService.class, InMemoryVehicleRepository.class,
-        InMemoryReservationRepository.class, ConfiguredContractFacade.class, TripControllerTest.FixedClock.class})
+        InMemoryReservationRepository.class, FixedContractFacade.class, ContractMinimumBatteryAdapter.class, TripControllerTest.FixedClock.class})
 class TripControllerTest {
     static final Instant NOW = Instant.parse("2026-12-01T15:17:00Z");
 
