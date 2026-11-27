@@ -255,12 +255,6 @@ class VehicleControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "ADMINISTRATOR")
-    void administratorIsForbiddenEvenWhenTheRequestIsInvalid() throws Exception {
-        register("not json").andExpect(status().isForbidden());
-    }
-
-    @Test
     void withoutSessionEveryOperationIs401() throws Exception {
         for (var request : allOperations()) {
             mvc.perform(request.with(csrf()).with(org.springframework.security.test.web.servlet.request

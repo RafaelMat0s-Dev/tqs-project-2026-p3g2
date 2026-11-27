@@ -60,7 +60,11 @@ class IdentitySecurityIT {
                 .andExpect(jsonPath("$.detail").exists())
                 .andExpect(jsonPath("$.instance").value("/api/contract"));
 
-        mvc.perform(post("/api/vehicles").with(csrf()).cookie(login.getResponse().getCookie(IdentityController.AUTH_COOKIE))
+        // O técnico pode registar veículos (D6 da SCRUM-20); a gestora do cliente não.
+        String managerEmail = "helena-" + System.nanoTime() + "@marazul.test";
+        accounts.create(managerEmail, "Helena Gestora", PASSWORD, StaffRole.CLIENT_MANAGER);
+        var managerCookie = login(managerEmail).getResponse().getCookie(IdentityController.AUTH_COOKIE);
+        mvc.perform(post("/api/vehicles").with(csrf()).cookie(managerCookie)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"code\":\"B-17\",\"type\":\"E_BIKE\",\"baseHubCode\":\"hotel-alvina-mar\"}"))
                 .andExpect(status().isForbidden())
