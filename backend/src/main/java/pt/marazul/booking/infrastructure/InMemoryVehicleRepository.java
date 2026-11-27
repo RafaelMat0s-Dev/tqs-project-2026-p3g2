@@ -1,6 +1,5 @@
 package pt.marazul.booking.infrastructure;
 
-import org.springframework.stereotype.Repository;
 import pt.marazul.booking.application.VehicleRepository;
 import pt.marazul.booking.domain.Vehicle;
 
@@ -10,7 +9,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-@Repository
 public class InMemoryVehicleRepository implements VehicleRepository {
     private final Map<UUID, Vehicle> vehicles = new ConcurrentHashMap<>();
 
