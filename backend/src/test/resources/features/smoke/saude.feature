@@ -5,11 +5,13 @@ Funcionalidade: Saúde da aplicação e contrato de erros
   Como equipa de desenvolvimento
   Queremos que a API responda às sondas de saúde e devolva o ID da regra violada
 
+  @TEST_SCRUM-271
   Cenário: A API está pronta a receber pedidos
     Quando consulto "/actuator/health/readiness"
     Então a resposta tem o estado 200
     E o campo "status" da resposta é "UP"
 
+  @TEST_SCRUM-270
   Cenário: Uma regra de negócio violada devolve o identificador da regra
     Quando envio para "/api/bookings" o pedido:
       """
