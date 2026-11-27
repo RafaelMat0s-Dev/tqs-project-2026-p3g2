@@ -55,12 +55,22 @@ be added behind ports instead of being called directly by domain classes.
 
 ### Fleet
 
-- `POST /api/vehicles` registers a vehicle for an administrator or coordinator.
-- `PATCH /api/vehicles/{id}/status` changes its lifecycle status for an
-  administrator or coordinator.
-- `GET /api/vehicles` exposes active vehicles to authenticated staff roles.
-- A retired vehicle cannot be reactivated; the API returns `422` with
-  `rule: BR-E4-01`.
+The `fleet` module owns the vehicle (UUID, unique `code` such as `B-17`, type,
+base hub, status, last known battery). It persists in PostgreSQL
+(`V3__fleet_vehicle.sql`); other modules use it only through `fleet.api.FleetApi`.
+
+- `POST /api/vehicles` registers a vehicle (it starts `DISABLED`, "Inativa").
+- `PATCH /api/vehicles/{id}/activate|deactivate|retire` move it through the
+  lifecycle; any other pair of states is invalid (Figure 2, 13 valid pairs).
+- `GET /api/vehicles?status=&hub=` lists vehicles.
+- Roles: `COORDINATOR` and `TECHNICIAN`; other roles receive `403`, no session `401`.
+- An invalid transition returns `422` with `rule: VEHICLE_LIFECYCLE` and the
+  transition in `detail`; a duplicate code returns `409` (`VEHICLE_CODE`); a
+  state changed by a concurrent request returns `409` (`VEHICLE_STATE_CHANGED`).
+- Battery and `lastReadingAt` arrive from the telemetry event
+  `TelemetryReadingReceived`; only newer readings are applied.
+- The `booking` module reads and updates vehicles through `FleetVehicleRepository`
+  (an adapter over `FleetApi`); an unknown battery counts as 0 %, so `BR1` refuses it.
 
 ### Reservations
 
@@ -81,8 +91,8 @@ All mapped API errors use RFC 9457 Problem Details with:
   "title": "Regra de negócio violada",
   "status": 422,
   "detail": "...",
-  "instance": "/api/vehicles/...",
-  "rule": "BR-E4-01"
+  "instance": "/api/vehicles/.../activate",
+  "rule": "VEHICLE_LIFECYCLE"
 }
 ```
 
@@ -99,16 +109,15 @@ command is:
 cd backend && mvn -B test
 ```
 
-The account repository and fleet/reservation repositories are temporary
-in-memory adapters. The next persistence step should replace those adapters
+The account, reservation and trip repositories are temporary in-memory
+adapters (the vehicle repository is already PostgreSQL, in `fleet`). The next persistence step should replace those adapters
 without changing the domain or controller contracts.
 
 ## Next boundaries
 
 The following work remains outside this skeleton:
 
-- PostgreSQL persistence and migrations.
+- PostgreSQL persistence for identity, reservations and trips.
 - Ticket assignment and technician-only ticket views.
-- MQTT telemetry adapter and simulator integration.
 - Frontend login, staff-account, and fleet screens.
 - Cucumber scenarios, Xray evidence, and the user manual.
