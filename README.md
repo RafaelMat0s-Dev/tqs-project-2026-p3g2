@@ -25,9 +25,9 @@ docker compose up --build
 | Serviço | Endereço |
 | :- | :- |
 | Aplicação web (nginx, que encaminha a API) | http://localhost:5173 |
-| API e estado | http://localhost:8080/actuator/health |
+| API e estado | http://localhost:5173/actuator/health |
 | Documentação da API (Swagger UI) | http://localhost:5173/swagger-ui.html |
-| Métricas Prometheus | http://localhost:8080/actuator/prometheus |
+| Métricas Prometheus | http://localhost:5173/actuator/prometheus |
 | Simulador de telemetria | http://localhost:8090/health |
 | PostgreSQL / Mosquitto (MQTT) | `localhost:5432` / `localhost:1883` |
 
