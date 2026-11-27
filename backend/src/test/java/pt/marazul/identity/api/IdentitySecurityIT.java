@@ -60,9 +60,13 @@ class IdentitySecurityIT {
                 .andExpect(jsonPath("$.detail").exists())
                 .andExpect(jsonPath("$.instance").value("/api/contract"));
 
-        mvc.perform(post("/api/vehicles").with(csrf()).cookie(login.getResponse().getCookie(IdentityController.AUTH_COOKIE))
+        // O técnico pode registar veículos (D6 da SCRUM-20); a gestora do cliente não.
+        String managerEmail = "helena-" + System.nanoTime() + "@marazul.test";
+        accounts.create(managerEmail, "Helena Gestora", PASSWORD, StaffRole.CLIENT_MANAGER);
+        var managerCookie = login(managerEmail).getResponse().getCookie(IdentityController.AUTH_COOKIE);
+        mvc.perform(post("/api/vehicles").with(csrf()).cookie(managerCookie)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"hubId\":\"hotel-alvina-mar\",\"type\":\"E_BIKE\",\"batteryPercentage\":80}"))
+                        .content("{\"code\":\"B-17\",\"type\":\"E_BIKE\",\"baseHubCode\":\"hotel-alvina-mar\"}"))
                 .andExpect(status().isForbidden())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.status").value(403))
@@ -88,29 +92,34 @@ class IdentitySecurityIT {
 
     @Test
     void e401VehicleFlowReturnsProblemDetailsForIllegalActivation() throws Exception {
+        String coordinatorEmail = "fleet-coordinator-" + System.nanoTime() + "@marazul.test";
+        accounts.create(coordinatorEmail, "Rui Sampaio", PASSWORD, StaffRole.COORDINATOR);
+        var cookie = login(coordinatorEmail).getResponse().getCookie(IdentityController.AUTH_COOKIE);
         String adminEmail = "fleet-admin-" + System.nanoTime() + "@marazul.test";
         accounts.create(adminEmail, "Sofia Administradora", PASSWORD, StaffRole.ADMINISTRATOR);
-        var cookie = login(adminEmail).getResponse().getCookie(IdentityController.AUTH_COOKIE);
+        var adminCookie = login(adminEmail).getResponse().getCookie(IdentityController.AUTH_COOKIE);
 
-        MvcResult created = mvc.perform(post("/api/vehicles").with(csrf()).cookie(cookie).contentType("application/json")
-                        .content("{\"hubId\":\"hotel-alvina-mar\",\"type\":\"E_BIKE\",\"batteryPercentage\":80}"))
-                .andExpect(status().isCreated())
-                .andReturn();
+        MvcResult created = null;
+        for (int attempt = 0; attempt < 50 && (created == null || created.getResponse().getStatus() != 201); attempt++) {
+            String code = "B-" + java.util.concurrent.ThreadLocalRandom.current().nextInt(100, 1000);
+            created = mvc.perform(post("/api/vehicles").with(csrf()).cookie(cookie).contentType("application/json")
+                    .content("{\"code\":\"" + code + "\",\"type\":\"E_BIKE\",\"baseHubCode\":\"hotel-alvina-mar\"}"))
+                    .andReturn();
+        }
+        org.assertj.core.api.Assertions.assertThat(created.getResponse().getStatus()).isEqualTo(201);
         String id = com.jayway.jsonpath.JsonPath.read(created.getResponse().getContentAsString(), "$.id");
 
-        mvc.perform(put("/api/contract").with(csrf()).cookie(cookie)).andExpect(status().isOk());
-        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch("/api/vehicles/" + id + "/status")
-                        .with(csrf()).cookie(cookie).contentType("application/json")
-                        .content("{\"status\":\"RETIRED\"}"))
+        mvc.perform(put("/api/contract").with(csrf()).cookie(adminCookie)).andExpect(status().isOk());
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch("/api/vehicles/" + id + "/retire")
+                        .with(csrf()).cookie(cookie))
                 .andExpect(status().isOk());
-        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch("/api/vehicles/" + id + "/status")
-                        .with(csrf()).cookie(cookie).contentType("application/json")
-                        .content("{\"status\":\"AVAILABLE\"}"))
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch("/api/vehicles/" + id + "/activate")
+                        .with(csrf()).cookie(cookie))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.status").value(422))
-                .andExpect(jsonPath("$.rule").value("BR-E4-01"))
-                .andExpect(jsonPath("$.instance").value("/api/vehicles/" + id + "/status"));
+                .andExpect(jsonPath("$.rule").value("VEHICLE_LIFECYCLE"))
+                .andExpect(jsonPath("$.instance").value("/api/vehicles/" + id + "/activate"));
     }
 
     @Test

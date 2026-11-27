@@ -3,12 +3,15 @@ package pt.marazul.trip;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Import;
 import pt.marazul.booking.api.ReservationFacade;
 import pt.marazul.booking.api.ReservationView;
 import pt.marazul.booking.application.ReservationService;
 import pt.marazul.booking.application.VehicleRepository;
 import pt.marazul.booking.domain.Vehicle;
+import pt.marazul.fleet.api.FleetApi;
+import pt.marazul.support.FleetFixtures;
 import pt.marazul.support.TestcontainersConfiguration;
 
 import java.time.Clock;
@@ -34,10 +37,15 @@ class ReservationExpiryIT {
     @Autowired
     Clock clock;
 
+    @Autowired
+    FleetApi fleet;
+
+    @Autowired
+    ApplicationEventPublisher events;
+
     @Test
     void theScheduledTaskExpiresAReservationThatIsNotUnlockedAndFreesTheVehicle() {
-        UUID vehicleId = UUID.randomUUID();
-        vehicles.save(new Vehicle(vehicleId, "hotel-alvina-mar", "E_BIKE", 80, Vehicle.Status.AVAILABLE));
+        UUID vehicleId = FleetFixtures.availableVehicle(fleet, events, 80);
         Instant start = clock.instant();
         UUID reservationId = reservations.reserve(vehicleId, "marta-" + UUID.randomUUID(), start, start.plusSeconds(3600)).id();
 

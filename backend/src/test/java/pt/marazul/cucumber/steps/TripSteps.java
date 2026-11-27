@@ -8,7 +8,10 @@ import pt.marazul.booking.api.ReservationView;
 import pt.marazul.booking.application.ReservationService;
 import pt.marazul.booking.application.VehicleRepository;
 import pt.marazul.booking.domain.Vehicle;
+import org.springframework.context.ApplicationEventPublisher;
 import pt.marazul.cucumber.MutableClock;
+import pt.marazul.fleet.api.FleetApi;
+import pt.marazul.support.FleetFixtures;
 import pt.marazul.shared.infrastructure.ClockConfiguration;
 import pt.marazul.trip.application.ReservationExpiryService;
 
@@ -34,13 +37,18 @@ public class TripSteps {
     private final ReservationFacade facade;
     private final VehicleRepository vehicles;
     private final ReservationExpiryService expiry;
+    private final FleetApi fleet;
+    private final ApplicationEventPublisher events;
     private final Map<String, String> guests = new HashMap<>();
     private UUID vehicleId;
     private UUID reservationId;
     private Instant start;
 
     public TripSteps(ApiSteps api, MutableClock clock, ReservationService reservations, ReservationFacade facade,
-                     VehicleRepository vehicles, ReservationExpiryService expiry) {
+                     VehicleRepository vehicles, ReservationExpiryService expiry,
+                     FleetApi fleet, ApplicationEventPublisher events) {
+        this.fleet = fleet;
+        this.events = events;
         this.api = api;
         this.clock = clock;
         this.reservations = reservations;
@@ -51,8 +59,7 @@ public class TripSteps {
 
     @Dado("uma reserva da/do {word} que começou às {int}h{int}")
     public void umaReservaQueComecouAs(String guest, int hour, int minute) {
-        vehicleId = UUID.randomUUID();
-        vehicles.save(new Vehicle(vehicleId, "hotel-alvina-mar", "E_BIKE", 80, Vehicle.Status.AVAILABLE));
+        vehicleId = FleetFixtures.availableVehicle(fleet, events, 80);
         start = at(hour, minute, 0);
         clock.set(start);
         reservationId = reservations.reserve(vehicleId, guest(guest), start, start.plusSeconds(3600)).id();
