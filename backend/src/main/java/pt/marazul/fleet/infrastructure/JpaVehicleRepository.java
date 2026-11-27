@@ -5,10 +5,12 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
 import pt.marazul.fleet.application.VehicleRepository;
 import pt.marazul.fleet.domain.Vehicle;
 import pt.marazul.fleet.domain.VehicleStatus;
+import pt.marazul.shared.domain.BusinessRuleConflict;
 
 @Repository
 public class JpaVehicleRepository implements VehicleRepository {
@@ -22,15 +24,22 @@ public class JpaVehicleRepository implements VehicleRepository {
 
     @Override
     public Vehicle save(Vehicle vehicle) {
-        FleetVehicleEntity entity = jpa.findById(vehicle.id())
-                .orElseGet(() -> new FleetVehicleEntity(vehicle.id(), clock.instant()));
+        if (jpa.existsById(vehicle.id())) {
+            return findById(vehicle.id()).orElseThrow();
+        }
+        FleetVehicleEntity entity = new FleetVehicleEntity(vehicle.id(), clock.instant());
         entity.copyFrom(vehicle);
-        return jpa.saveAndFlush(entity).toDomain();
+        try {
+            return jpa.saveAndFlush(entity).toDomain();
+        } catch (DataIntegrityViolationException e) {
+            throw new BusinessRuleConflict("VEHICLE_CODE",
+                    "Já existe um veículo com o código " + vehicle.code() + ".");
+        }
     }
 
     @Override
     public boolean changeStatus(UUID id, VehicleStatus from, VehicleStatus to) {
-        throw new UnsupportedOperationException("esqueleto SCRUM-20");
+        return jpa.changeStatus(id, from.name(), to.name()) > 0;
     }
 
     @Override

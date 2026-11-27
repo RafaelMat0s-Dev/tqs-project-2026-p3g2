@@ -78,6 +78,11 @@ public class FleetService {
 
     private Vehicle moveTo(UUID id, VehicleStatus target) {
         Vehicle vehicle = vehicles.findById(id).orElseThrow(() -> new VehicleNotFound(id));
-        return vehicles.save(vehicle.moveTo(target));
+        vehicle.moveTo(target);
+        if (!vehicles.changeStatus(id, vehicle.status(), target)) {
+            throw new BusinessRuleConflict("VEHICLE_STATE_CHANGED",
+                    "O estado do veículo " + vehicle.code() + " mudou entretanto; repita a operação.");
+        }
+        return vehicles.findById(id).orElseThrow(() -> new VehicleNotFound(id));
     }
 }

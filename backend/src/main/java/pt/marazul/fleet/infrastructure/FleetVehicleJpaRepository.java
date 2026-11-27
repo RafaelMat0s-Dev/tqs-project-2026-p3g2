@@ -23,4 +23,10 @@ public interface FleetVehicleJpaRepository extends JpaRepository<FleetVehicleEnt
     @Query("update FleetVehicleEntity v set v.batteryPercentage = :pct, v.lastReadingAt = :at "
             + "where v.code = :code and (v.lastReadingAt is null or v.lastReadingAt < :at)")
     int updateBatteryIfNewer(@Param("code") String code, @Param("pct") int pct, @Param("at") Instant at);
+
+    @Transactional
+    @Modifying
+    @Query(value = "update fleet_vehicle set status = :to, version = version + 1 where id = :id and status = :from",
+            nativeQuery = true)
+    int changeStatus(@Param("id") UUID id, @Param("from") String from, @Param("to") String to);
 }

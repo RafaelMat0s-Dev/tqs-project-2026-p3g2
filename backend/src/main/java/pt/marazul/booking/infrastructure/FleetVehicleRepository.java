@@ -35,11 +35,11 @@ public class FleetVehicleRepository implements VehicleRepository {
                 .orElseThrow(() -> new IllegalStateException("Veículo desconhecido na frota: " + id))
                 .status().name();
         String to = vehicle.status().name();
-        if (from.equals(to)) {
+        if (from.equals(to) && !"RESERVED".equals(to)) {
             return;
         }
         switch (from + ">" + to) {
-            case "AVAILABLE>RESERVED" -> fleet.markReserved(id);
+            case "AVAILABLE>RESERVED", "RESERVED>RESERVED" -> fleet.markReserved(id);
             case "RESERVED>AVAILABLE" -> fleet.release(id);
             case "RESERVED>IN_USE" -> fleet.startTrip(id);
             case "IN_USE>AVAILABLE" -> fleet.endTrip(id);
