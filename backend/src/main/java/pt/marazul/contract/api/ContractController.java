@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/contract")
 public class ContractController {
     @PutMapping
-    @PreAuthorize("hasAnyRole('ADMINISTRATOR', 'CLIENT_MANAGER')")
+    @PreAuthorize("hasRole('ADMINISTRATOR')")
     public void updateContract() {
     }
 }
