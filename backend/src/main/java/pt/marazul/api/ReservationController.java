@@ -5,7 +5,6 @@ import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -13,8 +12,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import pt.marazul.application.ReservationService;
 import pt.marazul.domain.Reservation;
-import pt.marazul.domain.ReservationConflict;
-import pt.marazul.domain.ReservationRuleViolation;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -35,18 +32,6 @@ public class ReservationController {
         return ReservationResponse.from(reservation);
     }
 
-    @ExceptionHandler(ReservationRuleViolation.class)
-    @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
-    public RuleError handleRuleViolation(ReservationRuleViolation exception) {
-        return new RuleError(exception.rule(), exception.getMessage());
-    }
-
-    @ExceptionHandler(ReservationConflict.class)
-    @ResponseStatus(HttpStatus.CONFLICT)
-    public RuleError handleReservationConflict(ReservationConflict exception) {
-        return new RuleError(exception.rule(), exception.getMessage());
-    }
-
     public record ReservationRequest(
             @NotNull UUID vehicleId,
             @NotBlank String guestId,
@@ -59,5 +44,4 @@ public class ReservationController {
         }
     }
 
-    public record RuleError(String rule, String message) { }
 }

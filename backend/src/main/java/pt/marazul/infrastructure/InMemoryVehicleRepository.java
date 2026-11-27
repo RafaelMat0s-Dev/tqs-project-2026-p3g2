@@ -5,6 +5,7 @@ import pt.marazul.application.VehicleRepository;
 import pt.marazul.domain.Vehicle;
 
 import java.util.Map;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -16,6 +17,11 @@ public class InMemoryVehicleRepository implements VehicleRepository {
     @Override
     public Optional<Vehicle> findById(UUID id) {
         return Optional.ofNullable(vehicles.get(id));
+    }
+
+    @Override
+    public List<Vehicle> findAll() {
+        return vehicles.values().stream().toList();
     }
 
     @Override
