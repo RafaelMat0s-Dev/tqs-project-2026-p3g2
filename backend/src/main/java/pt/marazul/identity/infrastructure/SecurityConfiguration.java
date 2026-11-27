@@ -1,6 +1,5 @@
 package pt.marazul.identity.infrastructure;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
@@ -17,6 +16,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import pt.marazul.identity.application.JwtService;
+import tools.jackson.databind.ObjectMapper;
 
 import java.net.URI;
 
@@ -24,6 +24,17 @@ import java.net.URI;
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfiguration {
+    static final String[] PUBLIC_ENDPOINTS = {
+            "/api/auth/login", "/error",
+            "/actuator/health", "/actuator/health/**", "/actuator/prometheus",
+            "/v3/api-docs", "/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**",
+            "/gbfs/**"
+    };
+
+    static final String[] GUEST_ENDPOINTS_UNTIL_GUEST_LOGIN = {
+            "/api/bookings", "/api/bookings/**", "/api/trips", "/api/trips/**", "/api/telemetry/**"
+    };
+
     @Bean
     PasswordEncoder passwordEncoder() {
         return Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8();
@@ -40,7 +51,8 @@ public class SecurityConfiguration {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/login", "/actuator/health", "/actuator/health/**").permitAll()
+                        .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
+                        .requestMatchers(GUEST_ENDPOINTS_UNTIL_GUEST_LOGIN).permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint((request, response, exception) -> writeProblem(

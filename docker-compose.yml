@@ -1,21 +1,137 @@
+name: marazul
+
+x-healthcheck: &healthcheck
+  interval: 5s
+  timeout: 5s
+  retries: 30
+
 services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${DB_NAME:-marazul}
+      POSTGRES_USER: ${DB_USER:-marazul}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-marazul}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+
+  mosquitto:
+    image: eclipse-mosquitto:2
+    volumes:
+      - ./infra/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - mosquitto-data:/mosquitto/data
+    ports:
+      - "${MQTT_PORT:-1883}:1883"
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "mosquitto_sub", "-t", "$$SYS/broker/uptime", "-C", "1", "-W", "3"]
+
   backend:
     build: ./backend
-    ports:
-      - "8080:8080"
     environment:
+      DB_HOST: postgres
+      DB_NAME: ${DB_NAME:-marazul}
+      DB_USER: ${DB_USER:-marazul}
+      DB_PASSWORD: ${DB_PASSWORD:-marazul}
+      MQTT_URL: tcp://mosquitto:1883
       MARAZUL_SECURITY_BOOTSTRAP_ADMIN_EMAIL: ${MARAZUL_SECURITY_BOOTSTRAP_ADMIN_EMAIL:-}
       MARAZUL_SECURITY_BOOTSTRAP_ADMIN_PASSWORD: ${MARAZUL_SECURITY_BOOTSTRAP_ADMIN_PASSWORD:-}
       MARAZUL_SECURITY_JWT_SECRET: ${MARAZUL_SECURITY_JWT_SECRET:-}
     depends_on:
-      - telemetry-simulator
+      postgres:
+        condition: service_healthy
+      mosquitto:
+        condition: service_healthy
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/actuator/health/readiness"]
+      start_period: 60s
+
+  simulator:
+    build: ./simulator
+    environment:
+      MQTT_URL: mqtt://mosquitto:1883
+      PUBLISH_RATE: ${PUBLISH_RATE:-10}
+      FLEET_SIZE: ${FLEET_SIZE:-60}
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    ports:
+      - "${SIMULATOR_PORT:-8090}:8090"
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8090/health"]
+
   frontend:
     build: ./frontend
-    ports:
-      - "5173:80"
     depends_on:
-      - backend
-  telemetry-simulator:
-    build: ./simulator
+      backend:
+        condition: service_healthy
     ports:
-      - "8090:8090"
+      - "${WEB_PORT:-5173}:80"
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/"]
+
+  sonar-db:
+    profiles: [quality]
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: sonar
+      POSTGRES_USER: sonar
+      POSTGRES_PASSWORD: sonar
+    volumes:
+      - sonar-db:/var/lib/postgresql/data
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD-SHELL", "pg_isready -U sonar -d sonar"]
+
+  sonarqube:
+    profiles: [quality]
+    image: sonarqube:26.11.0.134175-community
+    environment:
+      SONAR_JDBC_URL: jdbc:postgresql://sonar-db:5432/sonar
+      SONAR_JDBC_USERNAME: sonar
+      SONAR_JDBC_PASSWORD: sonar
+      SONAR_ES_BOOTSTRAP_CHECKS_DISABLE: "true"
+    depends_on:
+      sonar-db:
+        condition: service_healthy
+    volumes:
+      - sonarqube-data:/opt/sonarqube/data
+      - sonarqube-extensions:/opt/sonarqube/extensions
+      - sonarqube-logs:/opt/sonarqube/logs
+    ports:
+      - "${SONAR_PORT:-9000}:9000"
+
+  sonar-setup:
+    profiles: [quality]
+    image: curlimages/curl:8.23.0
+    user: "0:0"
+    entrypoint: ["sh", "/setup.sh"]
+    environment:
+      SONAR_HOST_URL: http://sonarqube:9000
+      SONAR_ADMIN_PASSWORD: ${SONAR_ADMIN_PASSWORD:-MarAzul-local-2026!}
+      SONAR_TOKEN_FILE: /out/token
+    volumes:
+      - ./infra/sonarqube/setup.sh:/setup.sh:ro
+      - ./.sonar:/out
+    depends_on:
+      sonarqube:
+        condition: service_started
+    restart: "no"
+
+volumes:
+  pgdata:
+  mosquitto-data:
+  sonar-db:
+  sonarqube-data:
+  sonarqube-extensions:
+  sonarqube-logs:
