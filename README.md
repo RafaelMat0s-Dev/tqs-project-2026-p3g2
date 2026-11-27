@@ -40,6 +40,18 @@ docker compose --profile quality up --build   # aplicação + SonarQube em http:
 
 As portas e as palavras-passe locais podem ser mudadas num ficheiro `.env` (ver [.env.example](.env.example)).
 
+### Primeiro administrador e sessões do staff
+
+Para criar o primeiro administrador localmente, forneça as credenciais por variáveis de ambiente ao arrancar a aplicação; não ficam guardadas no repositório:
+
+```bash
+MARAZUL_SECURITY_BOOTSTRAP_ADMIN_EMAIL=sofia@marazul.test \
+MARAZUL_SECURITY_BOOTSTRAP_ADMIN_PASSWORD='12-char-password' \
+docker compose up --build
+```
+
+As contas do staff usam palavras-passe com Argon2id e sessões JWT num cookie `HttpOnly`, `Secure` e `SameSite=Strict` (`POST /api/auth/login`). Defina `MARAZUL_SECURITY_JWT_SECRET` para as sessões sobreviverem a um reinício. As contas ficam em memória até existir o adaptador de persistência de identidades.
+
 ## Estrutura
 
 | Pasta | Conteúdo |

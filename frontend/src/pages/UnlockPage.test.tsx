@@ -32,7 +32,7 @@ describe("UnlockPage", () => {
   it("envia a reserva e o hóspede e mostra a hora de início da viagem", async () => {
     const fetchMock = vi
       .fn()
-      .mockResolvedValue(
+      .mockImplementation(async () =>
         Response.json(
           { id: "t1", reservationId: RESERVATION, vehicleId: "v1", startedAt: "2026-12-01T15:17:00Z" },
           { status: 201 },
@@ -44,7 +44,7 @@ describe("UnlockPage", () => {
     await unlockAs("marta");
 
     expect(await screen.findByRole("status")).toHaveTextContent("A sua viagem começou às 15:17.");
-    const [path, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const [path, init] = fetchMock.mock.calls.find(([url]) => url === "/api/trips") as [string, RequestInit];
     expect(path).toBe("/api/trips");
     expect(init.method).toBe("POST");
     expect(JSON.parse(init.body as string)).toEqual({ reservationId: RESERVATION, guestId: "marta" });
@@ -61,7 +61,10 @@ describe("UnlockPage", () => {
     [400, {}, "O pedido não é válido. Confirme a identificação do hóspede."],
     [500, {}, "Não foi possível desbloquear a bicicleta. Tente novamente dentro de momentos."],
   ])("mostra a mensagem certa para a resposta %i", async (status, body, message) => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(problem(status, body)));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(async () => problem(status, body)),
+    );
     renderUnlock();
 
     await unlockAs("marta");

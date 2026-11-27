@@ -31,7 +31,10 @@ public class ApiSteps {
 
     @Quando("envio para {string} o pedido:")
     public void envioOPedido(String path, String body) {
-        response = given().contentType(ContentType.JSON).accept(ContentType.JSON).body(body).post(path);
+        Response csrf = given().get("/api/auth/csrf");
+        response = given().cookies(csrf.getCookies())
+                .header(csrf.jsonPath().getString("headerName"), csrf.jsonPath().getString("token"))
+                .contentType(ContentType.JSON).accept(ContentType.JSON).body(body).post(path);
     }
 
     @Então("a resposta tem o estado {int}")

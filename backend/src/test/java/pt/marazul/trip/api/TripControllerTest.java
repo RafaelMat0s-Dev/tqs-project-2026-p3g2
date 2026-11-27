@@ -3,6 +3,7 @@ package pt.marazul.trip.api;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
@@ -31,6 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(TripController.class)
+@AutoConfigureMockMvc(addFilters = false)
 @Import({UnlockService.class, BookingReservationAdapter.class, ContractPickupWindowAdapter.class, InMemoryTripRepository.class,
         BookingReservationFacade.class, ReservationService.class, InMemoryVehicleRepository.class,
         InMemoryReservationRepository.class, ConfiguredContractFacade.class, TripControllerTest.FixedClock.class})
