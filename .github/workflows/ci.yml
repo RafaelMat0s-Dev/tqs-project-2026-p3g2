@@ -222,23 +222,41 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
+      - uses: actions/checkout@v7
       - uses: actions/download-artifact@v8
         with:
           name: backend-reports
           path: reports
-      - name: Import Cucumber results into Xray as a Test Execution
+      - name: Send features and Cucumber results to Xray
         env:
           XRAY_CLIENT_ID: ${{ secrets.XRAY_CLIENT_ID }}
           XRAY_CLIENT_SECRET: ${{ secrets.XRAY_CLIENT_SECRET }}
+          XRAY_URL: https://xray.cloud.getxray.app/api/v2
+          XRAY_PROJECT_KEY: SCRUM
+          XRAY_TEST_EXECUTION_TYPE_ID: "10045"
         run: |
           if [ -z "$XRAY_CLIENT_ID" ] || [ -z "$XRAY_CLIENT_SECRET" ]; then
             echo "::notice::XRAY_CLIENT_ID / XRAY_CLIENT_SECRET not configured; Xray import skipped."
             exit 0
           fi
           credentials=$(jq -n --arg id "$XRAY_CLIENT_ID" --arg secret "$XRAY_CLIENT_SECRET" '{client_id: $id, client_secret: $secret}')
-          token=$(curl -fsS -H "Content-Type: application/json" -X POST --data "$credentials" \
-            https://xray.cloud.getxray.app/api/v2/authenticate | tr -d '"')
+          token=$(curl -sS --fail-with-body -H "Content-Type: application/json" -X POST --data "$credentials" \
+            "$XRAY_URL/authenticate" | tr -d '"')
           echo "::add-mask::$token"
-          curl -fsS -H "Content-Type: application/json" -H "Authorization: Bearer $token" -X POST \
-            --data @reports/cucumber-reports/cucumber.json \
-            https://xray.cloud.getxray.app/api/v2/import/execution/cucumber
+
+          (cd backend/src/test/resources/features && zip -qr "$RUNNER_TEMP/features.zip" . -i '*.feature')
+          curl -sS --fail-with-body -H "Authorization: Bearer $token" \
+            -F "file=@$RUNNER_TEMP/features.zip" \
+            "$XRAY_URL/import/feature?projectKey=$XRAY_PROJECT_KEY&source=marazul" > "$RUNNER_TEMP/features.json"
+          jq . "$RUNNER_TEMP/features.json"
+          if [ "$(jq '.errors | length' "$RUNNER_TEMP/features.json")" != "0" ]; then
+            echo "::warning::Xray reported errors while importing the feature files."
+          fi
+
+          jq -n --arg project "$XRAY_PROJECT_KEY" --arg type "$XRAY_TEST_EXECUTION_TYPE_ID" \
+            --arg summary "Cucumber · main · ${GITHUB_SHA:0:7} · run $GITHUB_RUN_NUMBER" \
+            '{fields: {project: {key: $project}, summary: $summary, issuetype: {id: $type}}}' > "$RUNNER_TEMP/info.json"
+          curl -sS --fail-with-body -H "Authorization: Bearer $token" \
+            -F "results=@reports/cucumber-reports/cucumber.json;type=application/json" \
+            -F "info=@$RUNNER_TEMP/info.json;type=application/json" \
+            "$XRAY_URL/import/execution/cucumber/multipart"
