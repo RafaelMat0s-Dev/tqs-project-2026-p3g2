@@ -13,6 +13,7 @@ import pt.marazul.identity.application.GuestSession;
 import pt.marazul.identity.application.TokenIssuer;
 
 import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 import java.text.ParseException;
 import java.time.Clock;
 import java.time.Instant;
@@ -27,13 +28,27 @@ public class JwtTokenIssuer implements TokenIssuer {
     private final byte[] secret;
     private final Clock clock;
 
-    public JwtTokenIssuer(@Value("${marazul.identity.jwt-secret}") String secret, Clock clock) {
+    /**
+     * Sem segredo configurado, gera um aleatório no arranque: as sessões de hóspede caem quando o backend
+     * reinicia, mas nunca se assina com um valor conhecido. Um segredo configurado tem de ter 32 bytes.
+     */
+    public JwtTokenIssuer(@Value("${marazul.identity.jwt-secret:}") String secret, Clock clock) {
+        this.secret = secret == null || secret.isBlank() ? randomSecret() : checkedSecret(secret);
+        this.clock = clock;
+    }
+
+    private static byte[] randomSecret() {
+        byte[] bytes = new byte[MIN_SECRET_BYTES];
+        new SecureRandom().nextBytes(bytes);
+        return bytes;
+    }
+
+    private static byte[] checkedSecret(String secret) {
         byte[] bytes = secret.getBytes(StandardCharsets.UTF_8);
         if (bytes.length < MIN_SECRET_BYTES) {
             throw new IllegalArgumentException("marazul.identity.jwt-secret must have at least 32 bytes");
         }
-        this.secret = bytes;
-        this.clock = clock;
+        return bytes;
     }
 
     @Override

@@ -31,6 +31,15 @@ class JwtTokenIssuerTest {
     }
 
     @Test
+    void withoutASecretEachStartUsesARandomOne() {
+        JwtTokenIssuer first = new JwtTokenIssuer("", clock);
+        JwtTokenIssuer second = new JwtTokenIssuer(null, clock);
+
+        assertThat(first.verify(first.issue(session))).contains(session);
+        assertThat(second.verify(first.issue(session))).isEmpty();
+    }
+
+    @Test
     void garbageIsRejected() {
         assertThat(issuer.verify("abc")).isEmpty();
     }
@@ -55,6 +64,5 @@ class JwtTokenIssuerTest {
     @Test
     void aShortSecretIsRejectedAtStartup() {
         assertThatThrownBy(() -> new JwtTokenIssuer("short", clock)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new JwtTokenIssuer("", clock)).isInstanceOf(IllegalArgumentException.class);
     }
 }

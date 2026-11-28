@@ -52,6 +52,8 @@ docker compose up --build
 
 As contas do staff usam palavras-passe com Argon2id e sessões JWT num cookie `HttpOnly`, `Secure` e `SameSite=Strict` (`POST /api/auth/login`). Defina `MARAZUL_SECURITY_JWT_SECRET` para as sessões sobreviverem a um reinício. As contas ficam em memória até existir o adaptador de persistência de identidades.
 
+Os hóspedes entram com o código pessoal (`POST /api/auth/guest`) e recebem um JWT próprio, assinado com `JWT_SECRET`. Sem esse valor, o backend gera um segredo aleatório no arranque e as sessões de hóspede caem ao reiniciar; em produção tem de vir do ambiente (`openssl rand -base64 32`).
+
 ## Estrutura
 
 | Pasta | Conteúdo |
