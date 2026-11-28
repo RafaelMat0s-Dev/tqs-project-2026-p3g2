@@ -13,14 +13,14 @@ import java.util.UUID;
 
 @Service
 public class ReservationService {
-    private static final int MINIMUM_BATTERY_PERCENTAGE = 25;
-
     private final VehicleRepository vehicles;
     private final ReservationRepository reservations;
+    private final MinimumBatteryPort minimumBattery;
 
-    public ReservationService(VehicleRepository vehicles, ReservationRepository reservations) {
+    public ReservationService(VehicleRepository vehicles, ReservationRepository reservations, MinimumBatteryPort minimumBattery) {
         this.vehicles = vehicles;
         this.reservations = reservations;
+        this.minimumBattery = minimumBattery;
     }
 
     public Reservation reserve(UUID vehicleId, String guestId, Instant startsAt, Instant endsAt) {
@@ -32,7 +32,7 @@ public class ReservationService {
         if (!reservations.findOverlapping(vehicleId, startsAt, endsAt).isEmpty()) {
             throw new ReservationConflict("O veículo já está reservado nesse período.");
         }
-        if (vehicle.status() != Vehicle.Status.AVAILABLE || vehicle.batteryPercentage() < MINIMUM_BATTERY_PERCENTAGE) {
+        if (vehicle.status() != Vehicle.Status.AVAILABLE || vehicle.batteryPercentage() < minimumBattery.minimumBatteryPercentage()) {
             throw new ReservationRuleViolation("BR1", "O veículo não está disponível ou não tem bateria suficiente.");
         }
         if (!reservations.findActiveForGuest(guestId, startsAt, endsAt).isEmpty()) {
