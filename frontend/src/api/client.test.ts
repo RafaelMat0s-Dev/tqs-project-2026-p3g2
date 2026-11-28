@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { saveSession } from "../auth/session";
 import { ApiError, apiFetch } from "./client";
 
 function respond(status: number, body: string | null, contentType = "application/json") {
@@ -26,7 +27,39 @@ function headersOf(fetchMock: ReturnType<typeof vi.fn>, call: number) {
   return (fetchMock.mock.calls[call][1] as RequestInit).headers as Headers;
 }
 
+beforeEach(() => sessionStorage.clear());
+
 describe("apiFetch", () => {
+  it("acrescenta o cabeçalho Authorization quando há sessão", async () => {
+    saveSession({ token: "abc", guestId: "g", name: "Marta", expiresAt: "2999-01-01T00:00:00Z" });
+    const fetchMock = respond(200, "{}");
+
+    await apiFetch("/api/x");
+
+    expect((fetchMock.mock.calls[0][1].headers as Headers).get("Authorization")).toBe("Bearer abc");
+  });
+
+  it("não envia o token para um URL absoluto", async () => {
+    saveSession({ token: "abc", guestId: "g", name: "Marta", expiresAt: "2999-01-01T00:00:00Z" });
+    for (const url of ["https://outro.example/api/x", "//outro.example/api/x"]) {
+      const fetchMock = respond(200, "{}");
+      await apiFetch(url);
+      expect((fetchMock.mock.calls[0][1].headers as Headers).has("Authorization")).toBe(false);
+    }
+  });
+
+  it("não substitui um Authorization já definido nem o envia sem sessão", async () => {
+    saveSession({ token: "abc", guestId: "g", name: "Marta", expiresAt: "2999-01-01T00:00:00Z" });
+    const fetchMock = respond(200, "{}");
+    await apiFetch("/api/x", { headers: { Authorization: "Bearer outro" } });
+    expect((fetchMock.mock.calls[0][1].headers as Headers).get("Authorization")).toBe("Bearer outro");
+
+    sessionStorage.clear();
+    const second = respond(200, "{}");
+    await apiFetch("/api/x");
+    expect((second.mock.calls[0][1].headers as Headers).has("Authorization")).toBe(false);
+  });
+
   it("devolve o corpo JSON de uma resposta com sucesso", async () => {
     respond(200, '{"status":"UP"}');
 

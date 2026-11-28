@@ -1,3 +1,5 @@
+import { readSession } from "../auth/session";
+
 export interface ProblemDetail {
   type?: string;
   title?: string;
@@ -46,6 +48,11 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
     if (csrf !== undefined) {
       headers.set(csrf.headerName, csrf.token);
     }
+  }
+
+  const session = readSession();
+  if (session !== null && isSameOriginPath(path) && !headers.has("Authorization")) {
+    headers.set("Authorization", `Bearer ${session.token}`);
   }
 
   const response = await fetch(path, { credentials: "same-origin", ...init, headers });
@@ -101,4 +108,8 @@ async function readBody(response: Response): Promise<unknown> {
 
 function isProblem(value: unknown): value is ProblemDetail {
   return typeof value === "object" && value !== null;
+}
+
+function isSameOriginPath(path: string): boolean {
+  return path.startsWith("/") && !path.startsWith("//");
 }
