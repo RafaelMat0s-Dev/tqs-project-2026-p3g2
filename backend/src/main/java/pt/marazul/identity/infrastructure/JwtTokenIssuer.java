@@ -29,10 +29,6 @@ public class JwtTokenIssuer implements TokenIssuer {
     private final byte[] secret;
     private final Clock clock;
 
-    /**
-     * Sem segredo configurado, gera um aleatório no arranque: as sessões de hóspede caem quando o backend
-     * reinicia, mas nunca se assina com um valor conhecido. Um segredo configurado tem de ter 32 bytes.
-     */
     public JwtTokenIssuer(@Value("${marazul.identity.jwt-secret:}") String secret, Clock clock) {
         this.secret = secret == null || secret.isBlank() ? randomSecret() : checkedSecret(secret);
         this.clock = clock;
