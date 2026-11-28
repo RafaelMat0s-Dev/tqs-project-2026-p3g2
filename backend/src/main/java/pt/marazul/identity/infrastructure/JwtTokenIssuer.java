@@ -24,6 +24,7 @@ import java.util.UUID;
 @Component
 public class JwtTokenIssuer implements TokenIssuer {
     private static final int MIN_SECRET_BYTES = 32;
+    private static final SecureRandom RANDOM = new SecureRandom();
 
     private final byte[] secret;
     private final Clock clock;
@@ -39,7 +40,7 @@ public class JwtTokenIssuer implements TokenIssuer {
 
     private static byte[] randomSecret() {
         byte[] bytes = new byte[MIN_SECRET_BYTES];
-        new SecureRandom().nextBytes(bytes);
+        RANDOM.nextBytes(bytes);
         return bytes;
     }
 
