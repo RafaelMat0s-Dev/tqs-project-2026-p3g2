@@ -32,7 +32,7 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe("LoginPage", () => {
   it("guarda a sessão, vai para a página inicial e mostra o nome na barra", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(Response.json(SESSION));
+    const fetchMock = vi.fn().mockImplementation(async () => Response.json(SESSION));
     vi.stubGlobal("fetch", fetchMock);
     renderAt("/login");
 
@@ -41,7 +41,10 @@ describe("LoginPage", () => {
     expect(await screen.findByText("Olá, Marta")).toBeInTheDocument();
     expect(screen.queryByLabelText("Código pessoal")).not.toBeInTheDocument();
     expect(readSession()).toEqual(SESSION);
-    const [path, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const [path, init] = fetchMock.mock.calls.find(([url]) => url !== "/api/auth/csrf") as [
+      string,
+      RequestInit,
+    ];
     expect(path).toBe("/api/auth/guest");
     expect(JSON.parse(init.body as string)).toEqual({ code: "MARTA-2026" });
   });
@@ -66,7 +69,10 @@ describe("LoginPage", () => {
     [400, {}, "Escreva o seu código pessoal."],
     [500, {}, "Não foi possível entrar. Tente novamente dentro de momentos."],
   ])("mostra a mensagem do estado %i", async (status, body, message) => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(problem(status, body)));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(async () => problem(status, body)),
+    );
     renderAt("/login");
 
     await submitCode("ERRADO");
@@ -89,7 +95,10 @@ describe("LoginPage", () => {
 
   it("um 429 não apaga a sessão já guardada", async () => {
     saveSession(SESSION);
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(problem(429, {})));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(async () => problem(429, {})),
+    );
     renderAt("/login");
 
     await submitCode("X");

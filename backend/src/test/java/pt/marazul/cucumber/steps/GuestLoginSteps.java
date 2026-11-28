@@ -95,7 +95,10 @@ public class GuestLoginSteps {
     }
 
     private Response loginWith(String candidate) {
-        Response response = given().contentType(ContentType.JSON).accept(ContentType.JSON)
+        Response csrf = given().get("/api/auth/csrf");
+        Response response = given().cookies(csrf.getCookies())
+                .header(csrf.jsonPath().getString("headerName"), csrf.jsonPath().getString("token"))
+                .contentType(ContentType.JSON).accept(ContentType.JSON)
                 .header("X-Forwarded-For", origin)
                 .body("{\"code\":\"" + candidate + "\"}").post("/api/auth/guest");
         last = response;

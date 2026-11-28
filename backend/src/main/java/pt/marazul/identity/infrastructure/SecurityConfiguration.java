@@ -33,6 +33,8 @@ public class SecurityConfiguration {
             "/gbfs/**"
     };
 
+    static final String[] GUEST_LOGIN_ENDPOINTS = {"/api/auth/guest", "/api/auth/guest/session"};
+
     static final String[] GUEST_ENDPOINTS_UNTIL_GUEST_LOGIN = {
             "/api/bookings", "/api/bookings/**", "/api/trips", "/api/trips/**", "/api/telemetry/**"
     };
@@ -56,6 +58,7 @@ public class SecurityConfiguration {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
+                        .requestMatchers(GUEST_LOGIN_ENDPOINTS).permitAll()
                         .requestMatchers(GUEST_ENDPOINTS_UNTIL_GUEST_LOGIN).permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(exceptions -> exceptions
