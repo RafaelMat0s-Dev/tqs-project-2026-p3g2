@@ -25,9 +25,9 @@ docker compose up --build
 | Serviço | Endereço |
 | :- | :- |
 | Aplicação web (nginx, que encaminha a API) | http://localhost:5173 |
-| API e estado | http://localhost:8080/actuator/health |
+| API e estado | http://localhost:5173/actuator/health |
 | Documentação da API (Swagger UI) | http://localhost:5173/swagger-ui.html |
-| Métricas Prometheus | http://localhost:8080/actuator/prometheus |
+| Métricas Prometheus | http://localhost:5173/actuator/prometheus |
 | Simulador de telemetria | http://localhost:8090/health |
 | PostgreSQL / Mosquitto (MQTT) | `localhost:5432` / `localhost:1883` |
 
@@ -51,6 +51,8 @@ docker compose up --build
 ```
 
 As contas do staff usam palavras-passe com Argon2id e sessões JWT num cookie `HttpOnly`, `Secure` e `SameSite=Strict` (`POST /api/auth/login`). Defina `MARAZUL_SECURITY_JWT_SECRET` para as sessões sobreviverem a um reinício. As contas ficam em memória até existir o adaptador de persistência de identidades.
+
+Os hóspedes entram com o código pessoal (`POST /api/auth/guest`) e recebem um JWT próprio, assinado com `JWT_SECRET`. Sem esse valor, o backend gera um segredo aleatório no arranque e as sessões de hóspede caem ao reiniciar; em produção tem de vir do ambiente (`openssl rand -base64 32`).
 
 ## Estrutura
 

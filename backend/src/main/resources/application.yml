@@ -1,5 +1,6 @@
 server:
   port: 8080
+  forward-headers-strategy: native
 
 spring:
   application:
@@ -48,6 +49,9 @@ springdoc:
     path: /swagger-ui.html
 
 marazul:
+  identity:
+    jwt-secret: ${JWT_SECRET:}
+    max-session: 8h
   contract:
     pickup-window: 15m
   trip:

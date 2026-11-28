@@ -42,13 +42,15 @@ services:
       MARAZUL_SECURITY_BOOTSTRAP_ADMIN_EMAIL: ${MARAZUL_SECURITY_BOOTSTRAP_ADMIN_EMAIL:-}
       MARAZUL_SECURITY_BOOTSTRAP_ADMIN_PASSWORD: ${MARAZUL_SECURITY_BOOTSTRAP_ADMIN_PASSWORD:-}
       MARAZUL_SECURITY_JWT_SECRET: ${MARAZUL_SECURITY_JWT_SECRET:-}
+      JWT_SECRET: ${JWT_SECRET:-}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-}
     depends_on:
       postgres:
         condition: service_healthy
       mosquitto:
         condition: service_healthy
-    ports:
-      - "${BACKEND_PORT:-8080}:8080"
+    expose:
+      - "8080"
     healthcheck:
       <<: *healthcheck
       test: ["CMD", "curl", "-fsS", "http://localhost:8080/actuator/health/readiness"]
